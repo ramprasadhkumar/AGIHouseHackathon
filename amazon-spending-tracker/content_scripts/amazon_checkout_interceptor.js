@@ -13,27 +13,30 @@ const CHECKOUT_BUTTON_SELECTORS = [
 ];
 
 const ORDER_TOTAL_SELECTORS = [
-    '#subtotals-marketplace-table .grand-total-price',
-    '.order-summary-container .grand-total-price',
-    'td:contains("Order total:") + td',
-    'span:contains("Order total:") ~ span.a-text-bold',
-    'span:contains("Grand total:") ~ span.a-text-bold',
-    '#checkout-summary-subtotals_feature_div .grand-total-row span.a-text-bold',
-    '[data-testid="order-summary-grand-total"] span'
+    'div.order-summary-line-definition', // Added based on specific user feedback
+    // '#subtotals-marketplace-table .grand-total-price',
+    // '.order-summary-container .grand-total-price',
+    // 'td:contains("Order total:") + td',
+    // 'span:contains("Order total:") ~ span.a-text-bold',
+    // 'span:contains("Grand total:") ~ span.a-text-bold',
+    // '#checkout-summary-subtotals_feature_div .grand-total-row span.a-text-bold',
+    // '[data-testid="order-summary-grand-total"] span'
     // Add more selectors here
 ];
 
-const CUSTOM_BUTTON_ID = 'custom-review-spending-button';
+const CUSTOM_BUTTON_ID = 'amazon-tracker-button-custom';
 let originalButton = null;
 let orderTotalValue = null;
 let observer = null;
 let isIntercepted = false; // Flag to prevent multiple intercepts
 
 function findElement(selectors) {
+    console.log(`findElement: Searching with selectors:`, selectors); // Added log
     for (const selector of selectors) {
         try {
             const element = document.querySelector(selector);
-            if (element && (element.offsetWidth > 0 || element.offsetHeight > 0)) { // Check if visible
+            console.log(`findElement: Trying selector \"${selector}\" - Found:`, element); // Added log
+            if (element && (element.offsetWidth > 0 || element.offsetHeight > 0 || element.getClientRects().length > 0)) { // Check if visible or has layout
                 console.log('Found visible element with selector:', selector);
                 return element;
             }
@@ -45,7 +48,7 @@ function findElement(selectors) {
             }
         }
     }
-    console.log('No element found matching selectors:', selectors);
+    console.log('No visible element found matching selectors:', selectors); // Updated log
     return null;
 }
 
@@ -69,7 +72,7 @@ function extractPrice(element) {
 
 function injectCustomButton() {
     if (!originalButton || document.getElementById(CUSTOM_BUTTON_ID) || isIntercepted) {
-        console.log('Skipping injection: Original button not found, custom button exists, or already intercepted.');
+        // console.log('Skipping injection: Original button not found, custom button exists, or already intercepted.'); // Less verbose log
         return false; // Don't proceed if button not found or already injected
     }
 
@@ -106,7 +109,18 @@ function injectCustomButton() {
         console.log('Custom button clicked.');
 
         // Re-check order total just in case it updated dynamically
-        const currentOrderTotalElement = findElement(ORDER_TOTAL_SELECTORS);
+        // Special handling for order total - get the LAST matching element
+        let currentOrderTotalElement = null;
+        const totalElements = document.querySelectorAll('div.order-summary-line-definition');
+        if (totalElements.length > 0) {
+            currentOrderTotalElement = totalElements[totalElements.length - 1];
+            console.log('Found last order total element:', currentOrderTotalElement);
+        } else {
+            console.log('Could not find any elements matching div.order-summary-line-definition on click.');
+            // Fallback to other selectors if needed?
+            // currentOrderTotalElement = findElement(ORDER_TOTAL_SELECTORS.slice(1)); // Example: try others
+        }
+
         orderTotalValue = extractPrice(currentOrderTotalElement);
 
         if (orderTotalValue === null) {
@@ -152,12 +166,12 @@ function triggerOriginalOrderAction() {
 
         // Optionally re-hide after a short delay, although page will likely navigate
         setTimeout(() => {
-             if (document.body.contains(originalButton)) { // Check if still on page
-                 originalButton.style.visibility = 'hidden';
-                 originalButton.style.position = 'absolute';
-                 originalButton.disabled = true;
-                 console.log('Original button re-hidden (if page didn\'t navigate).');
-             }
+            if (document.body.contains(originalButton)) { // Check if still on page
+                originalButton.style.visibility = 'hidden';
+                originalButton.style.position = 'absolute';
+                originalButton.disabled = true;
+                console.log('Original button re-hidden (if page didn\'t navigate).');
+            }
         }, 500);
     } else {
         console.error('Cannot trigger original action: Original button not found.');
@@ -172,9 +186,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Send confirmation back AFTER clicking, including order total for storage update
         sendResponse({ success: true });
         // Send another message *after* responding, so background knows it's safe to update storage
-         setTimeout(() => {
+        setTimeout(() => {
             chrome.runtime.sendMessage({ action: 'orderTriggered', orderTotal: message.orderTotal }, (updateResponse) => {
-                if(chrome.runtime.lastError) {
+                if (chrome.runtime.lastError) {
                     console.error("Error sending orderTriggered message:", chrome.runtime.lastError.message);
                 } else {
                     console.log('Sent orderTriggered message to background.', updateResponse);
@@ -182,92 +196,115 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
         }, 50); // Short delay to ensure click processing starts
     }
+    // Add handling for potential other messages if needed
+    return true; // Indicate async response possible if needed later
 });
 
 // --- Main Logic ---
 function main() {
-    console.log('Running main execution logic.');
-    // Check if we are potentially on a checkout page
-    // A more robust check might look for specific form elements or URLs
-    if (window.location.href.includes('/gp/buy/spc/handlers/display.html') ||
-        window.location.href.includes('/checkout/payselect') || // Older URL?
-        window.location.href.includes('/checkout/confirm') ||
-        document.querySelector('#checkoutDisplayPage')) {
+    // REMOVED THE URL/ELEMENT CHECK - Now we rely on finding the button
+    console.log('Running main execution logic. Attempting to find checkout button...');
 
-        console.log('Potential checkout page detected.');
+    if (isIntercepted || document.getElementById(CUSTOM_BUTTON_ID)) {
+        console.log('main: Already intercepted or custom button exists. Skipping.');
+        return; // Don't run again if already done
+    }
 
-        originalButton = findElement(CHECKOUT_BUTTON_SELECTORS);
-        const orderTotalElement = findElement(ORDER_TOTAL_SELECTORS);
-        orderTotalValue = extractPrice(orderTotalElement);
+    originalButton = findElement(CHECKOUT_BUTTON_SELECTORS);
 
-        if (originalButton && orderTotalValue !== null) {
-            console.log('Found original button and order total. Proceeding with interception.');
-            injectCustomButton();
+    if (originalButton) {
+        console.log('Checkout button found. Proceeding with interception.');
+
+        // Get order total - Special handling: find the LAST matching element
+        let orderTotalElement = null;
+        const totalElements = document.querySelectorAll('div.order-summary-line-definition');
+        if (totalElements.length > 0) {
+            orderTotalElement = totalElements[totalElements.length - 1];
+            console.log('Found last order total element initially:', orderTotalElement);
         } else {
-            console.log('Original button or order total not found initially. Setting up observer.');
-            // Use MutationObserver to wait for the button and total to appear
-            setupObserver();
+            console.log('Could not find any elements matching div.order-summary-line-definition initially.');
+            // Fallback to other selectors if needed?
+            // orderTotalElement = findElement(ORDER_TOTAL_SELECTORS.slice(1)); // Example: try others
         }
+        orderTotalValue = extractPrice(orderTotalElement); // Store initial total if found
+
+        if (orderTotalValue === null) {
+            console.warn('Could not determine order total initially, but proceeding with button injection.');
+            // Decide if you want to block injection if total isn't found? For now, let's proceed.
+        }
+
+        const injected = injectCustomButton();
+        if (injected && observer) {
+            console.log("Disconnecting observer after successful injection.");
+            observer.disconnect(); // Stop observing once we've succeeded
+        }
+
     } else {
-        console.log('Not a recognized checkout page URL.');
+        console.log('Checkout button not found on initial load/check.');
+        // Observer will continue running if already set up
     }
 }
 
+// --- Observer Setup ---
 function setupObserver() {
-    if (observer) return; // Don't set up multiple observers
-
+    if (observer) {
+        console.log("Observer already exists.");
+        return; // Don't set up multiple observers
+    }
+    console.log('Setting up MutationObserver to watch for button appearance...');
     observer = new MutationObserver((mutationsList, obs) => {
-        // Optimization: check only if relevant nodes are added
-        let relevantChange = false;
+        // Optimization: Check if the custom button already exists before iterating
+        if (document.getElementById(CUSTOM_BUTTON_ID) || isIntercepted) {
+            console.log("Observer: Custom button exists or already intercepted. Disconnecting.");
+            obs.disconnect();
+            observer = null; // Clear observer reference
+            return;
+        }
+
+        let foundButtonNode = false;
         for (const mutation of mutationsList) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                 relevantChange = true;
-                 break;
+                // Basic check: Did *any* node get added? Could be more specific if needed.
+                foundButtonNode = true;
+                break; // No need to check further mutations in this batch
+                // More specific check (might be slow if many nodes added):
+                // for (const node of mutation.addedNodes) {
+                //     if (node.nodeType === Node.ELEMENT_NODE) {
+                //         // Check if the added node *is* the button or *contains* the button
+                //         if (CHECKOUT_BUTTON_SELECTORS.some(sel => node.matches(sel) || node.querySelector(sel))) {
+                //              foundButtonNode = true;
+                //              break;
+                //         }
+                //     }
+                // }
             }
-            // Consider attribute changes if selectors rely on them
-            // if (mutation.type === 'attributes') { relevantChange = true; break; }
+            // If we found a potential button node added, break the outer loop too
+            // if (foundButtonNode) break; // Use this with the more specific check
         }
 
-        if (!relevantChange) return;
-
-        console.log('DOM changed, re-checking for elements...');
-
-        if (!originalButton) {
-            originalButton = findElement(CHECKOUT_BUTTON_SELECTORS);
-        }
-        if (orderTotalValue === null) {
-            const orderTotalElement = findElement(ORDER_TOTAL_SELECTORS);
-            orderTotalValue = extractPrice(orderTotalElement);
-        }
-
-        // If both found and not yet intercepted, inject the button
-        if (originalButton && orderTotalValue !== null && !isIntercepted) {
-            console.log('Elements found via observer. Injecting button.');
-            if (injectCustomButton()) {
-                console.log('Button injected via observer. Disconnecting observer.');
-                obs.disconnect(); // Stop observing once the button is injected
-                observer = null;
-            }
+        if (foundButtonNode) {
+            console.log('Observer detected node changes. Re-running main logic.');
+            // Use a small timeout to let the DOM settle after mutation
+            setTimeout(main, 100);
+            // Consider disconnecting here if `main` successfully intercepts,
+            // which it now does internally.
         }
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
-    console.log('MutationObserver set up to watch for checkout elements.');
-
-    // Set a timeout to stop observing if elements aren't found after a while
-    setTimeout(() => {
-        if (observer) {
-            console.log('Observer timeout reached. Disconnecting.');
-            observer.disconnect();
-            observer = null;
-        }
-    }, 20000); // Stop after 20 seconds if nothing happens
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    console.log("Observer started.");
 }
 
-// Run main logic after a small delay to allow page elements to render
-// Using document_idle should help, but Amazon pages can be slow/dynamic
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(main, 500));
-} else {
-    setTimeout(main, 500);
-}
+// --- Initial Execution ---
+
+// Run initial check
+main();
+
+// Setup observer in case the button appears later
+// Delay observer setup slightly? Sometimes helps avoid observing initial bulk rendering.
+setTimeout(setupObserver, 500); // Setup observer after 500ms
+
+console.log('Amazon Spending Tracker: Content script execution finished initial setup.');
