@@ -27,7 +27,7 @@ def embed_chunks(chunks, model_name="sentence-transformers/all-MiniLM-L6-v2"):
 
 # 3. Build the FAISS index
 def build_faiss_index(embeddings):
-    dim = embeddings.shape[1]
+    dim = embeddings.shape[1] # dim = 384 # embeddings.shape = (10, 384)
     index = faiss.IndexFlatL2(dim)
     index.add(embeddings)
     return index
@@ -35,7 +35,7 @@ def build_faiss_index(embeddings):
 # 4. Retrieve top-k relevant chunks
 def retrieve_relevant_chunks(query, index, chunks, embedder, k=5):
     query_embedding = embedder.encode([query], convert_to_numpy=True)
-    distances, indices = index.search(query_embedding, k)
+    distances, indices = index.search(query_embedding, k) # distances.shape = (1, 5) # indices.shape = (1, 5)
     return [chunks[i] for i in indices[0]]
 
 # 5. Generate answer from context
