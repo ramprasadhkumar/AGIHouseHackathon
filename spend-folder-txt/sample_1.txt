@@ -1,0 +1,10 @@
+1. Milk - Essential - $3.50 x2 - Bought on 2025-04-10 08:12AM - Category: Grocery
+2. Eggs - Essential - $2.99 x1 - Bought on 2025-04-10 08:15AM - Category: Grocery
+3. T-Shirt - Non-Essential - $19.99 x2 - Bought on 2025-04-09 03:00PM - Category: Clothing
+4. Headphones - Non-Essential - $120.00 x1 - Bought on 2025-04-09 05:22PM - Category: Electronics
+5. Bread - Essential - $2.50 x1 - Bought on 2025-04-10 08:20AM - Category: Grocery
+6. Movie Ticket - Non-Essential - $15.00 x2 - Bought on 2025-04-08 09:00PM - Category: Entertainment
+7. Toothpaste - Essential - $4.25 x1 - Bought on 2025-04-07 07:30AM - Category: Personal Care
+8. Laptop - Non-Essential - $999.99 x1 - Bought on 2025-04-01 10:45AM - Category: Electronics
+9. Apples - Essential - $3.80 x5 - Bought on 2025-04-10 08:30AM - Category: Grocery
+10. Coffee - Essential - $4.50 x1 - Bought on 2025-04-10 07:50AM - Category: Beverage
