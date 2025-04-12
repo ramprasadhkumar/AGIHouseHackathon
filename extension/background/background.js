@@ -161,13 +161,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             })
             .then(budgetData => {
                 console.log("Received budget data from API:", budgetData);
-                // Assuming API returns { limit: number, currentSpending: number }
+                // Assuming API returns { limit: number, currentSpending: number, items: array }
                 sendResponse({
                     success: true,
                     data: {
                         orderTotal: dataToSend.orderTotal,
                         limit: budgetData.limit, // Use limit from API
                         currentSpending: budgetData.currentSpending, // Use currentSpending from API
+                        items: budgetData.items || [], // Pass items array, default to empty if missing
                         tabId: relevantTabId
                     }
                 });
@@ -191,6 +192,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                  orderTotal: dataToSend.orderTotal, // Keep original order total
                                  limit: dummyData.limit, // Use dummy limit
                                  currentSpending: dummyData.currentSpending, // Use dummy spending
+                                 items: dummyData.items || [], // Pass items array from dummy data
                                  tabId: relevantTabId
                              }
                          });

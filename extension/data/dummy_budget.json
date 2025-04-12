@@ -1,4 +1,9 @@
 {
   "limit": 500,
-  "currentSpending": 0
+  "currentSpending": 125.50,
+  "items": [
+    { "name": "Wireless Mouse", "price": 25.99 },
+    { "name": "Coffee Maker", "price": 79.50 },
+    { "name": "Book: The Great Novel", "price": 19.99 }
+  ]
 }
