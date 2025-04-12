@@ -87,6 +87,33 @@ function injectCustomButton() {
     originalButton.disabled = true; // Also disable it
 
     // 2. Create the custom button
+    const customControlsContainer = document.createElement('div');
+    customControlsContainer.id = 'spending-tracker-controls';
+    customControlsContainer.style.marginTop = '15px';
+    customControlsContainer.style.padding = '10px';
+    customControlsContainer.style.border = '1px solid #ddd';
+    customControlsContainer.style.borderRadius = '4px';
+    customControlsContainer.style.backgroundColor = '#f9f9f9';
+    customControlsContainer.style.textAlign = 'center'; // Center align content
+
+    // Create checkbox for essential spending
+    const essentialCheckboxLabel = document.createElement('label');
+    essentialCheckboxLabel.style.display = 'block'; // Place checkbox above button
+    essentialCheckboxLabel.style.marginBottom = '10px';
+    essentialCheckboxLabel.style.fontSize = '14px';
+    essentialCheckboxLabel.style.color = '#555';
+    essentialCheckboxLabel.style.cursor = 'pointer';
+
+    const essentialCheckbox = document.createElement('input');
+    essentialCheckbox.type = 'checkbox';
+    essentialCheckbox.id = 'spending-tracker-essential-checkbox';
+    essentialCheckbox.style.marginRight = '5px';
+    essentialCheckbox.style.verticalAlign = 'middle';
+
+    essentialCheckboxLabel.appendChild(essentialCheckbox);
+    essentialCheckboxLabel.appendChild(document.createTextNode(' Mark as Essential Purchase (ignores limit)'));
+
+    // Create the custom button
     const customButton = document.createElement('button');
     customButton.id = CUSTOM_BUTTON_ID;
     customButton.textContent = 'Review Spending & Place Order';
@@ -101,6 +128,10 @@ function injectCustomButton() {
     customButton.style.width = originalButton.offsetWidth > 50 ? `${originalButton.offsetWidth}px` : 'auto'; // Match width if reasonable
     customButton.style.height = originalButton.offsetHeight > 20 ? `${originalButton.offsetHeight}px` : 'auto'; // Match height
     customButton.style.display = 'inline-block'; // Ensure it's visible
+
+    // Add checkbox and button to the container
+    customControlsContainer.appendChild(essentialCheckboxLabel);
+    customControlsContainer.appendChild(customButton);
 
     // Add event listener
     customButton.addEventListener('click', (event) => {
@@ -131,8 +162,9 @@ function injectCustomButton() {
             return;
         }
 
-        console.log(`Sending message to background. Order total: ${orderTotalValue}`);
-        chrome.runtime.sendMessage({ action: 'showConfirmation', orderTotal: orderTotalValue }, (response) => {
+        const isEssential = document.getElementById('spending-tracker-essential-checkbox').checked;
+        console.log(`Sending message to background. Order total: ${orderTotalValue}, Is Essential: ${isEssential}`);
+        chrome.runtime.sendMessage({ action: 'showConfirmation', orderTotal: orderTotalValue, isEssential: isEssential }, (response) => {
             if (chrome.runtime.lastError) {
                 console.error('Error sending message to background:', chrome.runtime.lastError.message);
                 alert('Error communicating with the extension background. Please try reloading the page.');
@@ -146,7 +178,7 @@ function injectCustomButton() {
     });
 
     // 3. Insert the custom button (try placing it right before the original)
-    originalButton.parentNode.insertBefore(customButton, originalButton);
+    originalButton.parentNode.insertBefore(customControlsContainer, originalButton);
     console.log('Custom button injected.');
     return true;
 }

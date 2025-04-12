@@ -5,24 +5,30 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <h1>Amazon Spending Tracker Settings</h1>
+  <h1>Amazon Spending Tracker Options</h1>
 
-  <div class="setting">
-    <label for="limit">Monthly Non-Essential Limit ($):</label>
-    <input type="number" id="limit" name="limit" min="0" step="1">
-    <button id="saveLimit">Save Limit</button>
+  <div id="loading">Loading settings...</div>
+  <div id="error-message" class="error"></div>
+
+  <div id="settings" style="display: none;">
+    <h2>Current Month Summary</h2>
+    <p><strong>Non-Essential Limit:</strong> $<span id="currentLimit">N/A</span></p>
+    <p><strong>Non-Essential Spent:</strong> $<span id="currentNonEssentialSpending">N/A</span></p>
+    <p><strong>Essential Spent:</strong> $<span id="currentEssentialSpending">N/A</span></p>
+    <p><strong>Non-Essential Remaining:</strong> $<span id="remainingBudget">N/A</span></p>
+    <hr>
+
+    <h2>Settings</h2>
+    <label for="limitInput">Set Monthly Non-Essential Limit:</label>
+    <input type="number" id="limitInput" min="0" step="0.01">
+    <button id="saveLimitButton">Save Limit</button>
+    <p id="saveStatus" class="status"></p>
+
+    <hr>
+    <h2>Actions</h2>
+    <button id="resetSpendingButton">Reset Current Month's Spending</button>
+    <p id="resetStatus" class="status"></p>
   </div>
-
-  <div class="info">
-    <p>Current Limit: $<span id="currentLimit">Loading...</span></p>
-    <p>Spent This Month: $<span id="currentSpending">Loading...</span></p>
-  </div>
-
-  <div class="setting">
-    <button id="resetSpending" title="Manually reset current month's spending to zero">Reset Current Month's Spending</button>
-  </div>
-
-  <p id="status"></p>
 
   <script src="options.js"></script>
 </body>
