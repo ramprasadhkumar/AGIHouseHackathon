@@ -44,6 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
             populatePopup(response.data);
             loadingDiv.style.display = 'none';
             budgetSection.style.display = 'block'; // Show budget section
+
+            // Play the alert sound
+            try {
+                const audioUrl = chrome.runtime.getURL('data/alert.wav');
+                const alertSound = new Audio(audioUrl);
+                alertSound.play().catch(e => console.error("Error playing sound:", e)); // Play and catch potential errors
+                console.log("Attempting to play alert sound.");
+            } catch (e) {
+                console.error("Error creating or playing audio:", e);
+            }
+
         } else {
             displayError(response?.error || 'Failed to get order data from background script.');
         }
