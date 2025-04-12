@@ -58,7 +58,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "data/dummy_budget.json"
+        "data/dummy_budget.json",
+        "data/alert.wav"
       ],
       "matches": [
         "<all_urls>"

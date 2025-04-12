@@ -7,12 +7,14 @@
 <body>
     <h1>Review Your Spending</h1>
     <div id="loading">Loading spending data...</div>
-    <div id="content" style="display: none;">
+    <div id="budgetSection" style="display: none;">
         <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>
         <hr>
         <p>Spent This Month (Before this order): <strong id="currentSpending">$?.??</strong></p>
         <p>Monthly Limit: <strong id="monthlyLimit">$?.??</strong></p>
         <p>Remaining Budget (Before this order): <strong id="remainingBudget">$?.??</strong></p>
+        <hr>
+        <a href="#" id="viewPurchasesLink">View Monthly Purchases</a>
         <hr>
         <p id="warning" class="warning" style="display: none;">
             ⚠️ Warning: This order will exceed your monthly budget!
@@ -21,6 +23,12 @@
             <button id="confirmButton">Confirm and Place Order</button>
             <button id="cancelButton">Cancel</button>
         </div>
+    </div>
+    <div id="purchasesSection" style="display: none;">
+        <h2>Monthly Purchases</h2>
+        <ul id="purchasesList"></ul>
+        <hr>
+        <button id="hidePurchasesButton">Back to Summary</button>
     </div>
     <div id="error" class="error" style="display: none;"></div>
 
