@@ -9,8 +9,8 @@
             "name": "run-rag-solution",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/rag-solution/retrieve_context.py",
-            "cwd": "${workspaceFolder}/rag-solution",
+            "program": "${workspaceFolder}/backend/retrieve_context.py",
+            "cwd": "${workspaceFolder}/backend",
             "console": "integratedTerminal",
             "args": []
         }
