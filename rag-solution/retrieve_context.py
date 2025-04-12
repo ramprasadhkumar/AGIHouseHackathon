@@ -10,16 +10,19 @@ def load_text_files(folder_path):
     all_texts = []
     for file_path in Path(folder_path).rglob("*.txt"):
         with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            # Chunking: simple split by paragraphs or fixed-size windows
-            chunks = [content[i:i+500] for i in range(0, len(content), 500)]
-            all_texts.extend(chunks)
+            content = []
+            for line in f:
+                content.append(line)
+            # text = ''.join(content)
+            # Chunking: simple split by paragraphs or fixed-size windows 
+            # chunks = [text[i:i+500] for i in range(0, len(text), 500)]
+            all_texts.extend(content)
     return all_texts
 
 # 2. Embed the chunks
 def embed_chunks(chunks, model_name="sentence-transformers/all-MiniLM-L6-v2"):
     embedder = SentenceTransformer(model_name)
-    embeddings = embedder.encode(chunks, convert_to_numpy=True)
+    embeddings = embedder.encode(chunks, convert_to_numpy=True) # (10, 384)
     return embeddings, chunks
 
 # 3. Build the FAISS index
