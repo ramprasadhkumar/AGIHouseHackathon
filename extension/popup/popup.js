@@ -5,6 +5,7 @@ const budgetSection = document.getElementById('budgetSection');
 const errorDiv = document.getElementById('error');
 
 const orderTotalSpan = document.getElementById('orderTotal');
+const currentOrderItemsList = document.getElementById('currentOrderItemsList');
 const currentSpendingSpan = document.getElementById('currentSpending');
 const monthlyLimitSpan = document.getElementById('monthlyLimit');
 const remainingBudgetSpan = document.getElementById('remainingBudget');
@@ -40,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response && response.success && response.data) {
             console.log('Received data from background:', response.data);
             currentOrderData = response.data;
-            monthlyItems = response.data.items || []; // Store the items
+            monthlyItems = response.data.items || []; // Store the historical items
+            console.log("Bernett: ", response.data);
             populatePopup(response.data);
             loadingDiv.style.display = 'none';
             budgetSection.style.display = 'block'; // Show budget section
@@ -62,16 +64,45 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function populatePopup(data) {
+    console.log("Orlando: ", data);
     const orderTotal = data.orderTotal || 0;
     const currentSpending = data.currentSpending || 0;
     const limit = data.limit || 0;
     const remaining = limit - currentSpending;
-    monthlyItems = data.items || []; // Also update items here just in case
+    monthlyItems = data.items || []; // Update historical items here just in case
+    const currentItems = data.currentOrderItems || []; // Get current items for this order
 
     orderTotalSpan.textContent = `$${orderTotal.toFixed(2)}`;
     currentSpendingSpan.textContent = `$${currentSpending.toFixed(2)}`;
     monthlyLimitSpan.textContent = `$${limit.toFixed(2)}`;
     remainingBudgetSpan.textContent = `$${remaining.toFixed(2)}`;
+
+    // Populate the current items list
+    currentOrderItemsList.innerHTML = ''; // Clear previous items
+    if (currentItems.length === 0) {
+        currentOrderItemsList.innerHTML = '<li>No specific items detected.</li>';
+    } else {
+        currentItems.forEach(item => {
+            console.log("Bernett: ", item);
+            const li = document.createElement('li');
+            // Display name and price (if available)
+            // Make price formatting more robust
+            let priceString = '(Price not found)';
+            if (item && typeof item.price === 'number') { // Check if item exists and price is a number
+                priceString = `$${item.price.toFixed(2)}`;
+            } else if (item && item.price === null) {
+                // Price was explicitly null (extraction failed), keep default message or customize
+                // priceString = '(Price could not be extracted)';
+            } else {
+                // Log if item or item.price is unexpected (like undefined)
+                console.warn('Unexpected item structure in current order items:', item);
+                priceString = '(Invalid item data)';
+            }
+            const quantityString = item.quantity > 1 ? `(Qty: ${item.quantity})` : ''; // Show quantity if > 1
+            li.textContent = `${item.name || '(Name not found)'} ${quantityString} - ${priceString}`;
+            currentOrderItemsList.appendChild(li);
+        });
+    }
 
     if (currentSpending + orderTotal > limit) {
         warningP.style.display = 'block';
@@ -89,8 +120,19 @@ function displayPurchases() {
 
     monthlyItems.forEach(item => {
         const li = document.createElement('li');
-        // Basic display: "Item Name - $Price"
-        li.textContent = `${item.name} - $${item.price.toFixed(2)}`;
+        // Update display to show name and price (if available)
+        // Add similar robustness check for historical items
+        let priceString = '(Price not recorded)';
+        if (item && typeof item.price === 'number') {
+            priceString = `$${item.price.toFixed(2)}`;
+        } else if (item && item.price === null) {
+            // Historical price might legitimately be null if saved that way
+        } else {
+            console.warn('Unexpected item structure in historical monthly items:', item);
+            priceString = '(Invalid historical data)';
+        }
+        const quantityString = item.quantity > 1 ? `(Qty: ${item.quantity})` : ''; // Show quantity if > 1
+        li.textContent = `${item.name || '(Name not found)'} ${quantityString} - ${priceString}`;
         purchasesList.appendChild(li);
     });
 }

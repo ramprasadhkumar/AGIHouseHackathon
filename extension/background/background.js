@@ -1,7 +1,7 @@
 // background.js
 
 const MONTHLY_RESET_ALARM_NAME = 'monthlySpendingReset';
-let temporaryOrderData = {}; // Store tabId: { orderTotal: number }
+let temporaryOrderData = {}; // Store tabId: { orderTotal: number, items: Array<{name: string, price: number | null, quantity: number}> }
 
 // --- Initialization ---
 chrome.runtime.onInstalled.addListener(details => {
@@ -11,7 +11,8 @@ chrome.runtime.onInstalled.addListener(details => {
     chrome.storage.sync.set({
       monthlyNonEssentialLimit: 500, // Default limit
       currentMonthSpending: 0,
-      lastResetTimestamp: Date.now()
+      lastResetTimestamp: Date.now(),
+      monthlyPurchases: [] // Initialize empty array for purchases
     }, () => {
       console.log('Default spending limit and tracking initialized.');
     });
@@ -60,7 +61,8 @@ async function checkMonthlyReset() {
             console.log(`New month detected (${now.getMonth() + 1}/${now.getFullYear()}). Resetting spending.`);
             await chrome.storage.sync.set({
                 currentMonthSpending: 0,
-                lastResetTimestamp: now.getTime()
+                lastResetTimestamp: now.getTime(),
+                monthlyPurchases: [] // Also clear purchases on reset
             });
             console.log('Monthly spending reset complete.');
         } else {
@@ -89,7 +91,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Store data needed for the popup
     const tabId = sender.tab?.id;
     if (tabId) {
-        temporaryOrderData[tabId] = { orderTotal: message.orderTotal };
+        temporaryOrderData[tabId] = {
+            orderTotal: message.orderTotal,
+            items: message.items || [] // Store items, default to empty array
+        };
         console.log(`Stored temporary data for tab ${tabId}:`, temporaryOrderData[tabId]);
 
         // Open the popup window
@@ -149,6 +154,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         console.log(`Popup requested data, providing data associated with tab ${relevantTabId}`);
         const dataToSend = temporaryOrderData[relevantTabId];
+        console.log("Bernett: ", dataToSend);
         const apiUrl = 'http://localhost:8000/spending/monthly'; // Define API URL
 
         // Fetch budget data from the API
@@ -161,16 +167,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             })
             .then(budgetData => {
                 console.log("Received budget data from API:", budgetData);
-                // Assuming API returns { limit: number, currentSpending: number, items: array }
-                sendResponse({
-                    success: true,
-                    data: {
-                        orderTotal: dataToSend.orderTotal,
-                        limit: budgetData.limit, // Use limit from API
-                        currentSpending: budgetData.currentSpending, // Use currentSpending from API
-                        items: budgetData.items || [], // Pass items array, default to empty if missing
-                        tabId: relevantTabId
-                    }
+                // Assuming API returns { limit: number, currentSpending: number, items: array } - WRONG, API does not return items
+                // We should retrieve stored items from chrome.storage.sync
+                chrome.storage.sync.get('monthlyPurchases', (storageData) => {
+                    const storedItems = storageData.monthlyPurchases || [];
+                    console.log("Retrieved stored monthly purchases:", storedItems);
+
+                    sendResponse({
+                        success: true,
+                        data: {
+                            orderTotal: dataToSend.orderTotal,
+                            currentOrderItems: dataToSend.items || [], // Add current items from temp data
+                            limit: budgetData.limit, // Use limit from API
+                            currentSpending: budgetData.currentSpending, // Use currentSpending from API
+                            items: storedItems, // Send the *stored* monthly items (historical)
+                            tabId: relevantTabId
+                        }
+                    });
                 });
             })
             .catch(error => {
@@ -186,13 +199,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     })
                     .then(dummyData => {
                          console.log("Loaded dummy budget data:", dummyData);
+                         // Send dummy items if API/local fails
                          sendResponse({
                              success: true,
                              data: {
                                  orderTotal: dataToSend.orderTotal, // Keep original order total
+                                 currentOrderItems: dataToSend.items || [], // Add current items from temp data
                                  limit: dummyData.limit, // Use dummy limit
                                  currentSpending: dummyData.currentSpending, // Use dummy spending
-                                 items: dummyData.items || [], // Pass items array from dummy data
+                                 items: dummyData.items || [], // Pass items array from dummy data (historical)
                                  tabId: relevantTabId
                              }
                          });
@@ -213,12 +228,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === 'confirmOrder') {
     // Popup confirmed, tell the original content script to proceed
     const tabId = message.tabId;
-    const orderTotal = temporaryOrderData[tabId]?.orderTotal;
+    const orderData = temporaryOrderData[tabId]; // Get the full order data
     console.log(`Popup confirmed order for tab ${tabId}`);
-    if (tabId && typeof orderTotal !== 'undefined') {
+    if (tabId && orderData && typeof orderData.orderTotal !== 'undefined') {
         chrome.tabs.sendMessage(parseInt(tabId), {
             action: 'triggerOriginalOrder',
-            orderTotal: orderTotal // Pass orderTotal back for the final update message
+            orderTotal: orderData.orderTotal, // Pass orderTotal back
+            items: orderData.items // Pass items back as well
         }, (response) => {
             if (chrome.runtime.lastError) {
                 console.error(`Error sending trigger message to tab ${tabId}:`, chrome.runtime.lastError.message);
@@ -236,21 +252,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Content script confirmed it triggered the order, now update storage
     const tabId = sender.tab?.id;
     const orderTotal = message.orderTotal;
-    console.log(`Order triggered on tab ${tabId} for amount ${orderTotal}. Updating storage.`);
+    const orderItems = message.items || []; // Get items from the message
+    console.log(`Order triggered on tab ${tabId} for amount ${orderTotal}. Items:`, orderItems, `. Updating storage.`);
 
     if (typeof orderTotal === 'number' && orderTotal >= 0) {
-        chrome.storage.sync.get('currentMonthSpending', (data) => {
+        // Get current spending AND current purchases
+        chrome.storage.sync.get(['currentMonthSpending', 'monthlyPurchases'], (data) => {
             if (chrome.runtime.lastError) {
-                console.error('Error getting current spending:', chrome.runtime.lastError);
+                console.error('Error getting current spending/purchases:', chrome.runtime.lastError);
                 sendResponse({success: false, error: chrome.runtime.lastError.message});
             } else {
-                const newSpending = (data.currentMonthSpending || 0) + orderTotal;
-                chrome.storage.sync.set({ currentMonthSpending: newSpending }, () => {
+                const currentSpending = data.currentMonthSpending || 0;
+                const currentPurchases = data.monthlyPurchases || [];
+                const newSpending = currentSpending + orderTotal;
+
+                // Add new items (already objects) to the purchase list
+                const newPurchases = [...currentPurchases, ...orderItems];
+
+                // Update both spending and purchases
+                chrome.storage.sync.set({
+                    currentMonthSpending: newSpending,
+                    monthlyPurchases: newPurchases
+                }, () => {
                     if (chrome.runtime.lastError) {
-                        console.error('Error setting new spending:', chrome.runtime.lastError);
+                        console.error('Error setting new spending/purchases:', chrome.runtime.lastError);
                         sendResponse({success: false, error: chrome.runtime.lastError.message});
                     } else {
                         console.log(`Successfully updated spending. New total: ${newSpending}`);
+                        console.log(`Successfully updated purchases. New count: ${newPurchases.length}`);
                         sendResponse({ success: true, newSpending: newSpending });
                          // Clean up temporary data for this tab
                         if (tabId && temporaryOrderData[tabId]) {

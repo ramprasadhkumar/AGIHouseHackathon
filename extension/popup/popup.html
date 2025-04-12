@@ -3,12 +3,25 @@
 <head>
     <title>Confirm Purchase</title>
     <link rel="stylesheet" href="popup.css">
+    <style>
+        /* Add some basic styling for the item list */
+        .item-list {
+            list-style: disc;
+            margin-left: 20px;
+            max-height: 80px; /* Limit height and add scroll if needed */
+            overflow-y: auto;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
     <h1>Review Your Spending</h1>
     <div id="loading">Loading spending data...</div>
     <div id="budgetSection" style="display: none;">
         <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>
+        <p>Items in this order:</p>
+        <ul id="currentOrderItemsList" class="item-list"></ul>
         <hr>
         <p>Spent This Month (Before this order): <strong id="currentSpending">$?.??</strong></p>
         <p>Monthly Limit: <strong id="monthlyLimit">$?.??</strong></p>
