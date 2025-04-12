@@ -54,10 +54,10 @@ chunks = load_text_files(folder)
 embeddings, chunk_texts = embed_chunks(chunks)
 faiss_index = build_faiss_index(embeddings)
 embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-retrieved = retrieve_relevant_chunks(question, faiss_index, chunk_texts, embedder)
+retrieved = retrieve_relevant_chunks(question, faiss_index, chunk_texts, embedder, k=100)
 
 # Combine retrieved chunks into a single context
 context_text = "\n".join(retrieved)
-answer = generate_answer(question, context_text)
+answer = generate_answer(question, context_text, model_name="deepseek-ai/deepseek-coder-6.7b-base")
 
 print("\n💡 Answer:", answer)
