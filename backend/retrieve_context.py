@@ -67,7 +67,7 @@ def generate_answer(question, context, model_name="gpt2"):
 
 # 🧪 Example usage
 folder = "spend-folder-txt"
-question = "What is the total amount spent?"
+# question = "What is the total amount spent?"
 
 with open("../rag-solution/config.yaml", "r") as f:
     config = yaml.safe_load(f)
