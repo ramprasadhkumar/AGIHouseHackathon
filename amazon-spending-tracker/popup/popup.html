@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confirm Purchase</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <h1>Review Your Spending</h1>
+    <div id="loading">Loading spending data...</div>
+    <div id="content" style="display: none;">
+        <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>
+        <hr>
+        <p>Spent This Month (Before this order): <strong id="currentSpending">$?.??</strong></p>
+        <p>Monthly Limit: <strong id="monthlyLimit">$?.??</strong></p>
+        <p>Remaining Budget (Before this order): <strong id="remainingBudget">$?.??</strong></p>
+        <hr>
+        <p id="warning" class="warning" style="display: none;">
+            ⚠️ Warning: This order will exceed your monthly budget!
+        </p>
+        <div class="buttons">
+            <button id="confirmButton">Confirm and Place Order</button>
+            <button id="cancelButton">Cancel</button>
+        </div>
+    </div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

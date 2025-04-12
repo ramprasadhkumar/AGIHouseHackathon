@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Amazon Spending Tracker Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <h1>Amazon Spending Tracker Settings</h1>
+
+  <div class="setting">
+    <label for="limit">Monthly Non-Essential Limit ($):</label>
+    <input type="number" id="limit" name="limit" min="0" step="1">
+    <button id="saveLimit">Save Limit</button>
+  </div>
+
+  <div class="info">
+    <p>Current Limit: $<span id="currentLimit">Loading...</span></p>
+    <p>Spent This Month: $<span id="currentSpending">Loading...</span></p>
+  </div>
+
+  <div class="setting">
+    <button id="resetSpending" title="Manually reset current month's spending to zero">Reset Current Month's Spending</button>
+  </div>
+
+  <p id="status"></p>
+
+  <script src="options.js"></script>
+</body>
+</html>

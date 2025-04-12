@@ -1,0 +1,65 @@
+body {
+  font-family: sans-serif;
+  padding: 10px 20px;
+  min-width: 300px;
+}
+
+h1 {
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.setting {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.setting label {
+  margin-right: 10px;
+  flex-basis: 200px; /* Adjust as needed */
+}
+
+.setting input[type="number"] {
+  padding: 5px;
+  margin-right: 10px;
+  width: 80px;
+}
+
+.setting button {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.info {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border-top: 1px solid #ccc;
+  padding-top: 15px;
+}
+
+.info p {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+.info span {
+  font-weight: bold;
+}
+
+#resetSpending {
+    background-color: #f44336;
+    color: white;
+    border: none;
+}
+
+#resetSpending:hover {
+    background-color: #d32f2f;
+}
+
+#status {
+  margin-top: 15px;
+  font-weight: bold;
+  min-height: 1.2em; /* Prevent layout shift */
+}

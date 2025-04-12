@@ -1,0 +1,91 @@
+body {
+    font-family: sans-serif;
+    padding: 15px;
+    min-width: 350px;
+    min-height: 250px;
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+h1 {
+    font-size: 1.3em;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #004d40; /* Dark teal */
+    text-align: center;
+}
+
+#loading,
+#error {
+    text-align: center;
+    margin-top: 20px;
+    font-style: italic;
+}
+
+#error {
+    color: #d32f2f; /* Red */
+    font-weight: bold;
+}
+
+#content p {
+    margin: 8px 0;
+    font-size: 1em;
+}
+
+#content strong {
+    font-weight: bold;
+    float: right; /* Align amounts to the right */
+    margin-left: 10px; /* Space between label and value */
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 15px 0;
+}
+
+.warning {
+    background-color: #fff3e0; /* Light orange */
+    border: 1px solid #ffcc80; /* Orange border */
+    color: #e65100; /* Dark orange text */
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.warning svg {
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-around; /* Space out buttons */
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    min-width: 120px; /* Ensure buttons have some width */
+}
+
+#confirmButton {
+    background-color: #4CAF50; /* Green */
+    color: white;
+}
+
+#confirmButton:disabled {
+    background-color: #a5d6a7; /* Lighter green */
+    cursor: not-allowed;
+}
+
+#cancelButton {
+    background-color: #f44336; /* Red */
+    color: white;
+}
