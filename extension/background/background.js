@@ -149,7 +149,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         console.log(`Popup requested data, providing data associated with tab ${relevantTabId}`);
         const dataToSend = temporaryOrderData[relevantTabId];
-        const apiUrl = 'http://localhost:8000/budget'; // Define API URL
+        const apiUrl = 'http://localhost:8000/spending/monthly'; // Define API URL
 
         // Fetch budget data from the API
         fetch(apiUrl)
