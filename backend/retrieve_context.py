@@ -66,10 +66,10 @@ def generate_answer(question, context, model_name="gpt2"):
         return amount, generated_text
 
 # 🧪 Example usage
-folder = "/home/ubuntu/AGIHouseHackathon/spend-folder-txt"
+folder = "spend-folder-txt"
 question = "What is the total amount spent?"
 
-with open("config.yaml", "r") as f:
+with open("../rag-solution/config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 test_mode = config["test_mode"]
