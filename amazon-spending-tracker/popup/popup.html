@@ -5,27 +5,25 @@
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container">
-        <h2>Review Your Spending</h2>
-        <div id="loading">Loading spending data...</div>
-        <div id="error-message" class="error"></div>
-        <div id="summary" style="display: none;">
-            <p><strong>Order Total:</strong> $<span id="order-total">$?.??</span></p>
-            <p id="essential-marker" style="display: none; color: green; font-weight: bold;">Marked as Essential (Does not count towards limit)</p>
-            <hr>
-            <p><strong>Monthly Non-Essential Limit:</strong> $<span id="limit">$?.??</span></p>
-            <p><strong>Current Non-Essential Spending:</strong> $<span id="current-non-essential">$?.??</span></p>
-            <p><strong>Current Essential Spending:</strong> $<span id="current-essential">$?.??</span></p>
-            <p><strong>Non-Essential Budget Remaining:</strong> $<span id="remaining">$?.??</span></p>
-            <div id="warning-message" class="warning" style="display: none;">
-                ⚠️ Placing this non-essential order will exceed your monthly limit!
-            </div>
-        </div>
+    <h1>Review Your Spending</h1>
+    <div id="loading">Loading spending data...</div>
+    <div id="content" style="display: none;">
+        <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>
+        <hr>
+        <p>Spent This Month (Before this order): <strong id="currentSpending">$?.??</strong></p>
+        <p>Monthly Limit: <strong id="monthlyLimit">$?.??</strong></p>
+        <p>Remaining Budget (Before this order): <strong id="remainingBudget">$?.??</strong></p>
+        <hr>
+        <p id="warning" class="warning" style="display: none;">
+            ⚠️ Warning: This order will exceed your monthly budget!
+        </p>
         <div class="buttons">
-            <button id="confirm-button" disabled>Confirm & Place Order</button>
-            <button id="cancel-button">Cancel Order</button>
+            <button id="confirmButton">Confirm and Place Order</button>
+            <button id="cancelButton">Cancel</button>
         </div>
     </div>
+    <div id="error" class="error" style="display: none;"></div>
+
     <script src="popup.js"></script>
 </body>
 </html>
