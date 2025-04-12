@@ -2,18 +2,23 @@ from fastapi import FastAPI, HTTPException, Body, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List
+from contextlib import asynccontextmanager
 import datetime
 import os
-from retrieve_context import prompt_llm
+#from retrieve_context import prompt_llm
+from retrieve_context import LLMPrompt
 
 # Import models and data handling functions
 from . import models
 
+model = LLMPrompt()
 app = FastAPI(
     title="Monthly Spending Tracker API",
     description="API to track monthly spending, set limits, and check orders using JSON file storage.",
     version="1.1.0" # Bump version
 )
+
+
 
 # --- Helper Function for Month Rollover & Data Initialization ---
 
@@ -50,6 +55,8 @@ def check_and_prepare_data() -> dict:
 # --- API Endpoints ---
 # No dependency needed now, check_and_prepare_data called in each endpoint
 
+
+
 @app.get(
     "/spending/monthly",
     response_model=models.MonthlySpendingResponse,
@@ -81,7 +88,7 @@ async def check_order_spending(order_request: models.CheckOrderRequest = Body(..
     month_data = data["monthly_data"].get(current_month_str, {"current_spending": 0.0})
 
     # potential_spending = month_data["current_spending"] + order_request.orderAmount
-    current_spending_response = prompt_llm(f"What is the total amount spent?")
+    current_spending_response = model.prompt_llm(f"What is the total amount spent?")
     if current_spending_response["status"].lower() != "yes":
         return {
             "status": "no",
