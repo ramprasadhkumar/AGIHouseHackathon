@@ -5,9 +5,9 @@
     "4": { 
       "current_spending": 125.50,
       "items_purchased": [
-        { "name": "Wired Mouse", "price": 25.99 },
-        { "name": "Wired Keyboard", "price": 79.50 },
-        { "name": "Wired Headphone", "price": 19.99 }
+        { "name": "Wired Mouse", "price": 25.99, "quantity": 1 },
+        { "name": "Wired Keyboard", "price": 79.50, "quantity": 1 },
+        { "name": "Wired Headphone", "price": 19.99, "quantity": 1 }
       ]
     }
   }

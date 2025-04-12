@@ -17,6 +17,8 @@ const hidePurchasesButton = document.getElementById('hidePurchasesButton');
 
 const confirmButton = document.getElementById('confirmButton');
 const cancelButton = document.getElementById('cancelButton');
+const reviewButton = document.getElementById('reviewButton');
+const reviewResultDiv = document.getElementById('reviewResult');
 
 let currentOrderData = null; // To store { orderTotal, limit, currentSpending, items, tabId }
 let monthlyItems = []; // To store the fetched items
@@ -191,4 +193,66 @@ cancelButton.addEventListener('click', () => {
         chrome.runtime.sendMessage({ action: 'cancelOrder', tabId: currentOrderData.tabId });
     }
     window.close();
+});
+
+// Event Listener for Review Button
+reviewButton.addEventListener('click', () => {
+    console.log('Review button clicked.');
+    if (!currentOrderData || typeof currentOrderData.orderTotal !== 'number') {
+        displayError('Missing order data to perform review.');
+        return;
+    }
+
+    reviewButton.disabled = true;
+    reviewButton.textContent = 'Reviewing...';
+    reviewResultDiv.style.display = 'none'; // Hide previous result
+    reviewResultDiv.textContent = '';
+    reviewResultDiv.className = 'review-result'; // Reset classes
+
+    const apiUrl = 'http://localhost:8000/spending/check-order';
+    const requestBody = {
+        orderAmount: currentOrderData.orderTotal,
+        currentSpending: currentOrderData.currentSpending,
+        monthlyLimit: currentOrderData.limit,
+        itemsInOrder: currentOrderData.currentOrderItems || []
+    };
+
+    console.log('Sending review request to:', apiUrl, 'with body:', requestBody);
+
+    fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(response => {
+        if (!response.ok) {
+            // Try to get error message from response body if possible
+            return response.json().catch(() => null).then(errBody => {
+                throw new Error(`API request failed with status ${response.status}. ${errBody?.detail || ''}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Received review response:', data);
+        reviewResultDiv.textContent = data.message || 'No message received.';
+        if (data.status === 'no') {
+            reviewResultDiv.classList.add('warning');
+        } else if (data.status === 'yes') {
+            reviewResultDiv.classList.add('success');
+        }
+        reviewResultDiv.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error calling review API:', error);
+        reviewResultDiv.textContent = `Error: ${error.message}`;
+        reviewResultDiv.classList.add('warning'); // Show error as warning
+        reviewResultDiv.style.display = 'block';
+    })
+    .finally(() => {
+        reviewButton.disabled = false;
+        reviewButton.textContent = 'Review with AI';
+    });
 });
