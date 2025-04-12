@@ -43,8 +43,8 @@ def generate_answer(question, context, model_name="gpt2"):
     return output[0]["generated_text"]
 
 # 🧪 Example usage
-folder = "path_to_your_text_folder"
-question = "What are the main challenges discussed?"
+folder = "/home/ubuntu/AGIHouseHackathon/spend-folder-txt"
+question = "What is the total amount spent?"
 
 # Step-by-step
 chunks = load_text_files(folder)
