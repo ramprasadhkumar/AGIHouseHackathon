@@ -1,0 +1,84 @@
+{
+  "items": [
+    {
+      "name": "Milk",
+      "essential": "yes", 
+      "price": "$3.50",
+      "quantity": "2",
+      "date_bought_on": "2025-04-10 08:12AM",
+      "category": "Grocery"
+    },
+    {
+      "name": "Eggs",
+      "essential": "yes",
+      "price": "$2.99", 
+      "quantity": "1",
+      "date_bought_on": "2025-04-10 08:15AM",
+      "category": "Grocery"
+    },
+    {
+      "name": "T-Shirt",
+      "essential": "no",
+      "price": "$19.99",
+      "quantity": "2", 
+      "date_bought_on": "2025-04-09 03:00PM",
+      "category": "Clothing"
+    },
+    {
+      "name": "Headphones",
+      "essential": "no",
+      "price": "$120.00",
+      "quantity": "1",
+      "date_bought_on": "2025-04-09 05:22PM", 
+      "category": "Electronics"
+    },
+    {
+      "name": "Bread",
+      "essential": "yes",
+      "price": "$2.50",
+      "quantity": "1",
+      "date_bought_on": "2025-04-10 08:20AM",
+      "category": "Grocery"
+    },
+    {
+      "name": "Movie Ticket",
+      "essential": "no",
+      "price": "$15.00",
+      "quantity": "2",
+      "date_bought_on": "2025-04-08 09:00PM",
+      "category": "Entertainment"
+    },
+    {
+      "name": "Toothpaste",
+      "essential": "yes",
+      "price": "$4.25",
+      "quantity": "1",
+      "date_bought_on": "2025-04-07 07:30AM",
+      "category": "Personal Care"
+    },
+    {
+      "name": "Laptop",
+      "essential": "no",
+      "price": "$999.99",
+      "quantity": "1",
+      "date_bought_on": "2025-04-01 10:45AM",
+      "category": "Electronics"
+    },
+    {
+      "name": "Apples",
+      "essential": "yes",
+      "price": "$3.80",
+      "quantity": "5",
+      "date_bought_on": "2025-04-10 08:30AM",
+      "category": "Grocery"
+    },
+    {
+      "name": "Coffee",
+      "essential": "yes",
+      "price": "$4.50",
+      "quantity": "1",
+      "date_bought_on": "2025-04-10 07:50AM",
+      "category": "Beverage"
+    }
+  ]
+}
