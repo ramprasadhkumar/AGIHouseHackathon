@@ -149,23 +149,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         console.log(`Popup requested data, providing data associated with tab ${relevantTabId}`);
         const dataToSend = temporaryOrderData[relevantTabId];
+        const apiUrl = 'http://localhost:8000/budget'; // Define API URL
 
-        chrome.storage.sync.get(['monthlyNonEssentialLimit', 'currentMonthSpending'], (storageData) => {
-            if (chrome.runtime.lastError) {
-                console.error('Error getting storage data for popup:', chrome.runtime.lastError);
-                sendResponse({ success: false, error: chrome.runtime.lastError.message });
-            } else {
+        // Fetch budget data from the API
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(budgetData => {
+                console.log("Received budget data from API:", budgetData);
+                // Assuming API returns { limit: number, currentSpending: number }
                 sendResponse({
                     success: true,
                     data: {
                         orderTotal: dataToSend.orderTotal,
-                        limit: storageData.monthlyNonEssentialLimit,
-                        currentSpending: storageData.currentMonthSpending,
-                        tabId: relevantTabId // Send tabId so popup knows who to message back about
+                        limit: budgetData.limit, // Use limit from API
+                        currentSpending: budgetData.currentSpending, // Use currentSpending from API
+                        tabId: relevantTabId
                     }
                 });
-            }
-        });
+            })
+            .catch(error => {
+                console.warn(`API fetch failed: ${error.message}. Attempting to load local dummy data.`);
+                const localDataUrl = chrome.runtime.getURL('data/dummy_budget.json');
+
+                fetch(localDataUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Failed to load local data with status ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(dummyData => {
+                         console.log("Loaded dummy budget data:", dummyData);
+                         sendResponse({
+                             success: true,
+                             data: {
+                                 orderTotal: dataToSend.orderTotal, // Keep original order total
+                                 limit: dummyData.limit, // Use dummy limit
+                                 currentSpending: dummyData.currentSpending, // Use dummy spending
+                                 tabId: relevantTabId
+                             }
+                         });
+                    })
+                    .catch(localError => {
+                        console.error('Error loading local dummy budget data:', localError);
+                        // Final fallback: Send error if both API and local file fail
+                        sendResponse({ success: false, error: `Failed to fetch budget data from API and local fallback: ${localError.message}` });
+                    });
+            });
+
     } else {
         console.error('Popup requested data, but no temporary data found.');
         sendResponse({ success: false, error: 'No pending order data found.' });

@@ -17,7 +17,8 @@
     "https://*.amazon.it/*",
     "https://*.amazon.es/*",
     "https://*.amazon.com.au/*",
-    "https://*.amazon.co.jp/*"
+    "https://*.amazon.co.jp/*",
+    "http://localhost:8000/*"
   ],
   "background": {
     "service_worker": "background/background.js"
@@ -53,5 +54,15 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data/dummy_budget.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }
