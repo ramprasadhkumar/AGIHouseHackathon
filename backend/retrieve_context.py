@@ -89,7 +89,9 @@ def prompt_llm(question: str, retrieval_length: int = 100):
     if isinstance(answer, float):
         answer = {
             "message": f"The total amount spent is ${answer:.2f}",
-            "status": "Yes"
+            "status": "Yes",
+            "amount": answer,
+            "generated_text": generated_text
         }
     else:
         answer = {

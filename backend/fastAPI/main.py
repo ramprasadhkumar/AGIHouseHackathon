@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List
 import datetime
 import os
+from retrieve_context import prompt_llm
 
 # Import models and data handling functions
 from . import models
@@ -79,7 +80,17 @@ async def check_order_spending(order_request: models.CheckOrderRequest = Body(..
     current_month_str = str(data["current_month"])
     month_data = data["monthly_data"].get(current_month_str, {"current_spending": 0.0})
 
-    potential_spending = month_data["current_spending"] + order_request.orderAmount
+    # potential_spending = month_data["current_spending"] + order_request.orderAmount
+    current_spending_response = prompt_llm(f"What is the total amount spent?")
+    if current_spending_response["status"].lower() != "yes":
+        return {
+            "status": "no",
+            "message": "Warning: Adding this order will exceed your monthly limit!"
+        }
+    else:
+        current_spending = current_spending_response["amount"]
+    potential_spending = current_spending + order_request.orderAmount
+    
     if potential_spending <= data["monthly_limit"]:
         return {
             "status": "yes",
@@ -90,6 +101,26 @@ async def check_order_spending(order_request: models.CheckOrderRequest = Body(..
             "status": "no",
             "message": "Warning: Adding this order will exceed your monthly limit!"
         }
+        
+    
+    
+"""async def check_order_spending(order_request: models.CheckOrderRequest = Body(...)):
+    # Checks if adding a specific amount would exceed the monthly spending limit.
+    data = check_and_prepare_data()
+    current_month_str = str(data["current_month"])
+    month_data = data["monthly_data"].get(current_month_str, {"current_spending": 0.0})
+
+    potential_spending = month_data["current_spending"] + order_request.orderAmount
+    if potential_spending <= data["monthly_limit"]:
+        return {
+            "status": "yes",
+            "message": "Adding this order will keep you within your monthly limit."
+        }
+    else:
+        return {
+            "status": "no",
+            "message": "Warning: Adding this order will exceed your monthly limit!"
+        }"""
 
 @app.post(
     "/spending/items",
