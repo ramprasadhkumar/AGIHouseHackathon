@@ -74,7 +74,7 @@ with open("../rag-solution/config.yaml", "r") as f:
 
 test_mode = config["test_mode"]
 
-if not test_mode:
+def prompt_llm(question: str, retrieval_length: int = 100):
     # Step-by-step
     chunks = load_text_files(folder)
     embeddings, chunk_texts = embed_chunks(chunks)
@@ -96,10 +96,7 @@ if not test_mode:
             "message": generated_text,
             "status": "No/Not sure"
         }
-else:
-    answer = {
-        "message": "This is a test answer",
-        "status": "Yes"
-    }
+    return answer
 
-print("\n💡 Answer:", answer)
+if __name__ == "__main__":
+    print(prompt_llm("What is the total amount spent?"))
