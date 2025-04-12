@@ -54,6 +54,8 @@ def generate_answer(question, context, model_name="gpt2"):
             # Find dollar amount, looking for \boxed{number} format
             import re
             amount_match = re.search(r'\\boxed{([\d.]+)}', answer_text)
+            if amount_match:
+                return float(amount_match.group(1)), answer_text
             # Fallback to looking for $ followed by number
             amount_match = re.search(r'\$\s*([\d,.]+)', answer_text)
             if amount_match:
