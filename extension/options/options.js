@@ -7,55 +7,106 @@ const currentSpendingSpan = document.getElementById('currentSpending');
 const resetSpendingButton = document.getElementById('resetSpending');
 const statusP = document.getElementById('status');
 
-// Load current settings when the page loads
-function loadSettings() {
-  chrome.storage.sync.get(['monthlyNonEssentialLimit', 'currentMonthSpending'], (data) => {
-    if (chrome.runtime.lastError) {
-      statusP.textContent = 'Error loading settings.';
-      console.error(chrome.runtime.lastError);
-      return;
-    }
-    limitInput.value = data.monthlyNonEssentialLimit !== undefined ? data.monthlyNonEssentialLimit : 500;
-    currentLimitSpan.textContent = data.monthlyNonEssentialLimit !== undefined ? data.monthlyNonEssentialLimit.toFixed(2) : 'N/A';
-    currentSpendingSpan.textContent = data.currentMonthSpending !== undefined ? data.currentMonthSpending.toFixed(2) : 'N/A';
-  });
+const BASE_URL = 'http://localhost:8000'; // Your FastAPI server URL
+
+// Function to update status message
+function updateStatus(message, isError = false) {
+    statusP.textContent = message;
+    statusP.style.color = isError ? 'red' : 'green';
+    // Optional: clear status after a few seconds
+    // setTimeout(() => statusP.textContent = '', 5000);
 }
 
-// Save the limit
-saveLimitButton.addEventListener('click', () => {
-  const newLimit = parseFloat(limitInput.value);
-  if (isNaN(newLimit) || newLimit < 0) {
-    statusP.textContent = 'Please enter a valid non-negative number for the limit.';
-    return;
-  }
+// Load current settings from the backend
+async function loadSettings() {
+    updateStatus('Loading settings...', false);
+    try {
+        const response = await fetch(`${BASE_URL}/spending/monthly`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: `HTTP error ${response.status}` }));
+            throw new Error(errorData.detail || errorData.message || `HTTP error ${response.status}`);
+        }
+        const data = await response.json();
 
-  chrome.storage.sync.set({ monthlyNonEssentialLimit: newLimit }, () => {
-    if (chrome.runtime.lastError) {
-      statusP.textContent = 'Error saving limit.';
-      console.error(chrome.runtime.lastError);
-    } else {
-      statusP.textContent = 'Limit saved!';
-      currentLimitSpan.textContent = newLimit.toFixed(2);
-      setTimeout(() => { statusP.textContent = ''; }, 3000);
+        limitInput.value = data.limit !== undefined ? data.limit : 500; // Keep default logic
+        currentLimitSpan.textContent = data.limit !== undefined ? data.limit.toFixed(2) : 'N/A';
+        currentSpendingSpan.textContent = data.currentSpending !== undefined ? data.currentSpending.toFixed(2) : 'N/A';
+        updateStatus('Settings loaded.', false);
+
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        updateStatus(`Error loading settings: ${error.message}`, true);
+        // Set defaults or N/A on error
+        limitInput.value = 500; // Default
+        currentLimitSpan.textContent = 'N/A';
+        currentSpendingSpan.textContent = 'N/A';
     }
-  });
+}
+
+// Save the limit via backend API
+saveLimitButton.addEventListener('click', async () => {
+    const newLimit = parseFloat(limitInput.value);
+    if (isNaN(newLimit) || newLimit < 0) {
+        updateStatus('Please enter a valid non-negative number for the limit.', true);
+        return;
+    }
+
+    updateStatus('Saving limit...', false);
+    try {
+        const response = await fetch(`${BASE_URL}/spending/limit`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ limit: newLimit }),
+        });
+
+        const data = await response.json(); // Try to parse JSON regardless of status for error details
+
+        if (!response.ok) {
+            throw new Error(data.detail || data.message || `HTTP error ${response.status}`);
+        }
+
+        updateStatus(data.message || 'Limit updated successfully!', false);
+        // Refresh the displayed settings after saving
+        loadSettings();
+
+    } catch (error) {
+        console.error('Error saving limit:', error);
+        updateStatus(`Error saving limit: ${error.message}`, true);
+    }
 });
 
-// Reset current spending
-resetSpendingButton.addEventListener('click', () => {
-  if (confirm("Are you sure you want to reset this month's spending counter to $0.00?")) {
-    chrome.storage.sync.set({ currentMonthSpending: 0, lastResetTimestamp: Date.now() }, () => {
-      if (chrome.runtime.lastError) {
-        statusP.textContent = 'Error resetting spending.';
-        console.error(chrome.runtime.lastError);
-      } else {
-        statusP.textContent = 'Current month spending reset to $0.00.';
-        currentSpendingSpan.textContent = '0.00';
-         setTimeout(() => { statusP.textContent = ''; }, 3000);
-      }
-    });
-  }
+// Reset spending via backend API
+resetSpendingButton.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to reset the current month\'s spending to $0.00?')) {
+        return;
+    }
+
+    updateStatus('Resetting spending...', false);
+    try {
+        const response = await fetch(`${BASE_URL}/spending/reset`, {
+            method: 'POST',
+            headers: {
+                 'Content-Type': 'application/json', // Good practice, even if no body
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || data.message || `HTTP error ${response.status}`);
+        }
+
+        updateStatus(data.message || 'Spending reset successfully!', false);
+        // Refresh settings to show the new zero spending
+        loadSettings(); 
+
+    } catch (error) {
+        console.error('Error resetting spending:', error);
+        updateStatus(`Error resetting spending: ${error.message}`, true);
+    }
 });
 
-// Load settings on initial open
+// Initial load when the options page is opened
 document.addEventListener('DOMContentLoaded', loadSettings);

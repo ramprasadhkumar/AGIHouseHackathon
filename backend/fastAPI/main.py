@@ -130,14 +130,18 @@ async def check_order_spending(order_request: models.CheckOrderRequest = Body(..
         }"""
 
 @app.post(
-    "/spending/items",
+    "/spending/record-purchase",
     response_model=models.RecordPurchaseResponse,
-    status_code=201,
-    summary="Record a New Purchase",
+    summary="Record a Completed Purchase",
     tags=["Spending"]
 )
-async def record_purchase(purchase: models.NewPurchaseRequest = Body(...)):
-    """Adds a new spending item to the current month's total and saves to JSON."""
+async def record_purchase(purchase: models.RecordPurchaseRequest = Body(...)):
+    """Adds a new spending record based on a completed purchase to the current month's total and saves to JSON.
+    
+    Receives the total order amount and a list of items.
+    Updates the monthly spending by the total order amount.
+    Adds individual items to the purchased list for the month.
+    """
     data = check_and_prepare_data()
     current_month_str = str(data["current_month"])
     month_data = data["monthly_data"].get(current_month_str)
@@ -146,11 +150,18 @@ async def record_purchase(purchase: models.NewPurchaseRequest = Body(...)):
     if month_data is None:
          raise HTTPException(status_code=500, detail="Internal error: Monthly data structure missing.")
 
-    month_data["items_purchased"].append({"name": purchase.name, "price": purchase.price})
-    month_data["current_spending"] += purchase.price
+    # Add individual items from the request to the stored list
+    for item in purchase.itemsInOrder:
+        # Convert Pydantic model item to dict for JSON storage
+        month_data["items_purchased"].append({"name": item.name, "price": item.price})
+        # Optionally add timestamp or other details from the request item if needed
+
+    # Update the total spending by the orderAmount from the request
+    month_data["current_spending"] += purchase.orderAmount
     models.save_data(data) # Save changes
 
-    return {"newCurrentSpending": round(month_data["current_spending"], 2)}
+    # Return the new response format
+    return {"message": f"Purchase recorded successfully. New spending: ${month_data['current_spending']:.2f}"}
 
 @app.put(
     "/spending/limit",
@@ -167,6 +178,39 @@ async def update_spending_limit(limit_update: models.UpdateLimitRequest = Body(.
         "limit": data["monthly_limit"],
         "message": "Spending limit updated successfully."
     }
+
+# --- New Endpoint for Resetting Spending ---
+
+@app.post(
+    "/spending/reset",
+    response_model=models.ResetSpendingResponse,
+    summary="Reset Current Month's Spending",
+    tags=["Spending"]
+)
+async def reset_monthly_spending():
+    """Resets the current month's spending total to 0.00 and clears the purchased items list.
+    
+    Does not change the monthly limit.
+    """
+    data = check_and_prepare_data() # Ensures data is loaded and month is correct
+    current_month_str = str(data["current_month"])
+    month_data = data["monthly_data"].get(current_month_str)
+
+    if month_data is None:
+        # This shouldn't happen if check_and_prepare_data works, but handle defensively
+        raise HTTPException(status_code=500, detail="Internal error: Monthly data structure missing for reset.")
+
+    # Reset spending and items for the current month
+    month_data["current_spending"] = 0.00
+    month_data["items_purchased"] = []
+    
+    models.save_data(data) # Save the changes
+
+    return {
+        "message": f"Spending for month {current_month_str} reset successfully.",
+        "currentSpending": month_data["current_spending"] # Should be 0.0
+    }
+
 
 # --- Audio Endpoint ---
 

@@ -65,6 +65,17 @@ class CheckOrderRequest(BaseModel):
     monthlyLimit: float = Field(..., ge=0, description="The monthly spending limit.")
     itemsInOrder: List[Dict[str, Any]] = Field(default_factory=list, description="List of items in the current order.")
 
+# Model for a single item in the purchase request (matches frontend structure)
+class RecordPurchaseItem(BaseModel):
+    name: str = Field(..., description="Name of the item in the order.")
+    price: float = Field(..., gt=0, description="Price of the item in the order.")
+    # Add quantity or other fields if available/needed
+
+class RecordPurchaseRequest(BaseModel):
+    orderAmount: float = Field(..., gt=0, description="The total amount of the order being recorded.")
+    itemsInOrder: List[RecordPurchaseItem] = Field(..., description="List of items included in the purchase.")
+    timestamp: str = Field(..., description="ISO timestamp of when the record request was made.")
+
 class NewPurchaseRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Name of the purchased item.")
     price: float = Field(..., gt=0, description="Price of the purchased item.")
@@ -88,11 +99,16 @@ class CheckOrderResponse(BaseModel):
     message: str
 
 class RecordPurchaseResponse(BaseModel):
-    newCurrentSpending: float
+    message: str
 
 class UpdateLimitResponse(BaseModel):
     limit: float
     message: str
+
+# New response model for resetting spending
+class ResetSpendingResponse(BaseModel):
+    message: str
+    currentSpending: float # Optionally return the new (zero) spending
 
 class ErrorResponse(BaseModel):
     message: str
