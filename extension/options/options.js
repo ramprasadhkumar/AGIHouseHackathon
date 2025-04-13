@@ -35,11 +35,11 @@ async function loadSettings() {
 
     } catch (error) {
         console.error('Error loading settings:', error);
-        updateStatus(`Error loading settings: ${error.message}`, true);
+        updateStatus(`Could not connect to backend: ${error.message}. Displaying defaults.`, true);
         // Set defaults or N/A on error
-        limitInput.value = 500; // Default
-        currentLimitSpan.textContent = 'N/A';
-        currentSpendingSpan.textContent = 'N/A';
+        limitInput.value = 500; // Default limit input value
+        currentLimitSpan.textContent = (500).toFixed(2); // Display default limit
+        currentSpendingSpan.textContent = (0).toFixed(2); // Display default spending
     }
 }
 

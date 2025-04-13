@@ -1,9 +1,89 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Confirm Purchase</title>
+    <meta charset="UTF-8">
+    <title>Budget Bae Review ♡</title>
     <link rel="stylesheet" href="popup.css">
     <style>
+        body {
+            font-family: sans-serif;
+            padding: 10px;
+            min-width: 350px;
+            background-color: #fff0f5; /* Lavender blush */
+            color: #553c4f; /* Muted plum */
+        }
+
+        h1 {
+            color: #e75480; /* Pink heading */
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #f4c2c2; /* Light pink */
+            margin: 10px 0;
+        }
+
+        #budgetSection p, #purchasesSection h2 {
+             color: #553c4f; /* Muted plum */
+        }
+
+        #budgetSection strong {
+            color: #d87093; /* Pale violet red */
+        }
+
+        a#viewPurchasesLink {
+            color: #e75480; /* Pink link */
+            text-decoration: none;
+        }
+        a#viewPurchasesLink:hover {
+            text-decoration: underline;
+        }
+
+        .buttons button {
+            background-color: #e75480; /* Pink button */
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            margin: 5px 3px;
+            font-size: 0.9em;
+        }
+        .buttons button:hover {
+            background-color: #d87093; /* Darker pink */
+        }
+        .buttons button::after {
+            content: ' ♡';
+            font-size: 0.9em;
+        }
+        #cancelButton {
+            background-color: #aaa;
+        }
+        #cancelButton:hover {
+             background-color: #888;
+        }
+
+        #purchasesSection button {
+            background-color: #aaa;
+             color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+         #purchasesSection button:hover {
+              background-color: #888;
+         }
+         #purchasesSection button::after {
+            content: ' ←'; /* Back arrow */
+         }
+
         /* Add some basic styling for the item list */
         .item-list {
             list-style: disc;
@@ -30,6 +110,7 @@
         #currentOrderItemsTable th {
             background-color: #f2f2f2; /* Light grey background for header */
             font-weight: bold;
+            color: #553c4f; /* Override body color if needed */
         }
         /* Align quantity and price columns */
         #currentOrderItemsTable td:first-child, /* First column (Qty) */
@@ -58,10 +139,26 @@
             border-color: #c3e6cb;
             color: #155724;
         }
+
+        .error {
+            color: #a94442; /* Bootstrap danger color */
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            padding: 8px;
+            border-radius: 3px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #loading {
+             text-align: center;
+             padding: 15px;
+             color: #d87093;
+        }
     </style>
 </head>
 <body>
-    <h1>Review Your Spending</h1>
+    <h1>Review Your Spending ♡</h1>
     <div id="loading">Loading spending data...</div>
     <div id="budgetSection" style="display: none;">
         <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>

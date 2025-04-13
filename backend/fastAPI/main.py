@@ -7,6 +7,7 @@ import datetime
 import os
 #from retrieve_context import prompt_llm
 from retrieve_context import LLMPrompt
+from fastapi.middleware.cors import CORSMiddleware
 
 # Import models and data handling functions
 from . import models
@@ -18,7 +19,20 @@ app = FastAPI(
     version="1.1.0" # Bump version
 )
 
+# --- CORS Middleware Configuration ---
+origins = [
+    "*",  # Allows all origins (adjust for production if needed)
+    # You could restrict this to your specific extension ID in production:
+    # "chrome-extension://<YOUR_EXTENSION_ID>"
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, PUT, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
 
 # --- Helper Function for Month Rollover & Data Initialization ---
 
