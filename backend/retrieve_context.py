@@ -87,7 +87,7 @@ class LLMPrompt:
         
         question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Give your answer in the form of a dictionary with the following keys: <analysis>, <status>"
         if additional_context:
-            new_context = f"<previous_spending_data>: {previous_order_dump}\nincoming order: {incoming_order_with_category_str}\n{additional_context}"
+            new_context = f"<previous_spending_data>: {previous_order_dump}\n<incoming_order>: {incoming_order_with_category_str}\n<additional_context>: {additional_context}"
         else:
             new_context = f"<previous_spending_data>: {previous_order_dump}\nincoming order: {incoming_order_with_category_str}"
         answer = self.generate_answer(context=new_context, question=question)
