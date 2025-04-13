@@ -2,41 +2,76 @@ body {
   font-family: sans-serif;
   padding: 10px 20px;
   min-width: 300px;
+  background-color: #fff0f5; /* Lavender blush background */
+  color: #553c4f; /* Muted plum text color */
 }
 
 h1 {
   font-size: 1.2em;
   margin-bottom: 15px;
-  color: #333;
+  color: #e75480; /* Pink heading */
+  text-align: center;
+  border-bottom: 1px solid #f4c2c2; /* Light pink border */
+  padding-bottom: 5px;
 }
 
 .setting {
   margin-bottom: 15px;
   display: flex;
   align-items: center;
+  padding: 10px;
+  background-color: #ffffff;
+  border: 1px solid #f4c2c2; /* Light pink border */
+  border-radius: 5px;
 }
 
 .setting label {
   margin-right: 10px;
   flex-basis: 200px; /* Adjust as needed */
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #d87093; /* Pale violet red label */
 }
 
 .setting input[type="number"] {
   padding: 5px;
   margin-right: 10px;
-  width: 80px;
+  width: 100px;
+  border: 1px solid #f4c2c2;
+  border-radius: 3px;
 }
 
 .setting button {
   padding: 5px 10px;
   cursor: pointer;
+  background-color: #e75480; /* Pink button */
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.setting button:hover {
+  background-color: #d87093; /* Darker pink on hover */
+}
+
+.setting button::after {
+  content: ' ♡'; /* Add a heart after button text */
+  font-size: 0.9em;
 }
 
 .info {
   margin-top: 20px;
   margin-bottom: 20px;
   border-top: 1px solid #ccc;
-  padding-top: 15px;
+  padding: 10px;
+  background-color: #ffe4e1; /* Misty rose info box */
+  border: 1px solid #f4c2c2;
+  border-radius: 5px;
 }
 
 .info p {
@@ -49,17 +84,31 @@ h1 {
 }
 
 #resetSpending {
-    background-color: #f44336;
-    color: white;
-    border: none;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  background-color: #e75480; /* Pink button */
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
 }
 
 #resetSpending:hover {
-    background-color: #d32f2f;
+  background-color: #d87093; /* Darker pink on hover */
+}
+
+#resetSpending::after {
+  content: ' ♡'; /* Add a heart after button text */
+  font-size: 0.9em;
 }
 
 #status {
   margin-top: 15px;
   font-weight: bold;
   min-height: 1.2em; /* Prevent layout shift */
+  color: #e75480;
 }

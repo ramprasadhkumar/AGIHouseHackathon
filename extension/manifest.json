@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Amazon Spending Tracker",
+  "name": "Budget Bae",
   "version": "1.0",
-  "description": "Helps manage non-essential spending on Amazon by intercepting the checkout process.",
+  "description": "Your cute personal budget assistant for online shopping! ♡",
   "permissions": [
     "storage",
     "alarms",
