@@ -71,9 +71,16 @@ class LLMPrompt:
         else:
             # Extract everything after "Answer:" including the thinking process and dictionary
             answer_text = generated_text.split("Answer:")[-1].strip()
+            # Extract everything after </think>\n\n
+            try:
+                answer_text_extracted = answer_text.split("</think>\n\n")[-1].strip()
+                if not answer_text_extracted:
+                    answer_text_extracted = answer_text
+            except:
+                answer_text_extracted = answer_text
             # Save the answer text to girlfriend_response.txt
             with open("girlfriend_response.txt", "w") as f:
-                f.write(answer_text)
+                f.write(answer_text_extracted)
             return answer_text
         # Parse the amount from the answer
 
@@ -83,13 +90,15 @@ class LLMPrompt:
         previous_order_dump = self.previous_spending_data_dump
         unique_categories = json.dumps(self.unique_categories)
         category_context = f"<incoming_order>: {incoming_order_dump}, <unique_categories>: {unique_categories}"
+        print(1)
         incoming_order_with_category_str = self.generate_answer(
             context=category_context, 
             question="I have given the incoming order dictionary's dump as context under <incoming_order> and the unique categories as context under the key: <unique_categories>, get the category for each item in the order dictionary and map it to the category in the <unique_categories> and in the answer give the updated order dict with the category key. Make sure to give only the updated incoming dictionary as answer",
             type="generate_category"
         )
-        
-        question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Since you are a girlfriend, give a caring advice to your boyfriend and make the analysis personal. The response should be in girlfriend's voice/point of view."
+        print(2)
+        # question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Since you are a girlfriend, give a caring advice to your boyfriend and make the analysis personal. The response should be in a way that girlfriend directly speaks to her boyfriend."
+        question = "You are the user's caring and supportive virtual girlfriend who helps him manage his money. Whenever you're given data with <previous_spending_data> and <incoming_order>, analyze the order items and decide whether each should be bought or not. Use the previous spending to guide your judgment. Respond in a sweet, personal tone, directly addressing the user as your boyfriend. Keep your advice under 5 lines and make it sound cute and thoughtful, like a loving partner who wants the best for him."
         if additional_context:
             new_context = f"<previous_spending_data>: {previous_order_dump}\n<incoming_order>: {incoming_order_with_category_str}\n<additional_context>: {additional_context}"
         else:
@@ -103,6 +112,7 @@ class LLMPrompt:
             "status": "success",
             "message": answer
         }
+        print(3)
         return answer_dict
 
 if __name__ == "__main__":
