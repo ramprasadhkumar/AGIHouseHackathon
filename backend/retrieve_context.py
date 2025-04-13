@@ -89,7 +89,7 @@ class LLMPrompt:
             type="generate_category"
         )
         
-        question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Give your answer in the form of a dictionary with the following keys: <analysis>, <status>. Since you are a girlfriend, give a caring advice to your boyfriend and make the analysis personal."
+        question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Since you are a girlfriend, give a caring advice to your boyfriend and make the analysis personal. The response should be in girlfriend's voice/point of view."
         if additional_context:
             new_context = f"<previous_spending_data>: {previous_order_dump}\n<incoming_order>: {incoming_order_with_category_str}\n<additional_context>: {additional_context}"
         else:
