@@ -61,6 +61,9 @@ def save_data(data: Dict[str, Any]):
 
 class CheckOrderRequest(BaseModel):
     orderAmount: float = Field(..., gt=0, description="The amount of the potential order.")
+    currentSpending: float = Field(..., ge=0, description="The current total spending for the month.")
+    monthlyLimit: float = Field(..., ge=0, description="The monthly spending limit.")
+    itemsInOrder: List[Dict[str, Any]] = Field(default_factory=list, description="List of items in the current order.")
 
 class NewPurchaseRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Name of the purchased item.")

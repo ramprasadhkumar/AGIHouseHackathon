@@ -3,12 +3,42 @@
 <head>
     <title>Confirm Purchase</title>
     <link rel="stylesheet" href="popup.css">
+    <style>
+        /* Add some basic styling for the item list */
+        .item-list {
+            list-style: disc;
+            margin-left: 20px;
+            max-height: 80px; /* Limit height and add scroll if needed */
+            overflow-y: auto;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        /* Add styling for review result */
+        .review-result {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background-color: #f8f8f8;
+        }
+        .review-result.warning {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+            color: #856404;
+        }
+        .review-result.success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+    </style>
 </head>
 <body>
     <h1>Review Your Spending</h1>
     <div id="loading">Loading spending data...</div>
     <div id="budgetSection" style="display: none;">
         <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>
+        <p>Items in this order:</p>
+        <ul id="currentOrderItemsList" class="item-list"></ul>
         <hr>
         <p>Spent This Month (Before this order): <strong id="currentSpending">$?.??</strong></p>
         <p>Monthly Limit: <strong id="monthlyLimit">$?.??</strong></p>
@@ -21,8 +51,10 @@
         </p>
         <div class="buttons">
             <button id="confirmButton">Confirm and Place Order</button>
+            <button id="reviewButton">Review with AI</button>
             <button id="cancelButton">Cancel</button>
         </div>
+        <div id="reviewResult" class="review-result" style="display: none; margin-top: 10px;"></div>
     </div>
     <div id="purchasesSection" style="display: none;">
         <h2>Monthly Purchases</h2>

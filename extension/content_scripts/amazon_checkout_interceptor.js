@@ -24,6 +24,15 @@ const ORDER_TOTAL_SELECTORS = [
     // Add more selectors here
 ];
 
+// Selector for item names
+// const ORDER_ITEM_CONTAINER_SELECTOR = 'div[data-asin]'; // Removed, searching directly for names
+// const ORDER_ITEM_NAME_SELECTOR = 'span[id^="checkout-item-block-item-primary-title"]'; // Previous selector
+// const ORDER_ITEM_NAME_SELECTOR = 'span[data-csa-c-id="checkout-item-block-itemPrimaryTitle"]'; // Typo in attribute name
+const ORDER_ITEM_NAME_SELECTOR = 'span[data-csa-c-slot-id="checkout-item-block-itemPrimaryTitle"]'; // Correct attribute selector for the outer span
+// Re-introduce price selector based on HTML structure
+const ORDER_ITEM_PRICE_SELECTOR = 'span.lineitem-price-text';
+const ORDER_ITEM_QUANTITY_SELECTOR = 'span.quantity-display'; // Selector for quantity
+
 const CUSTOM_BUTTON_ID = 'amazon-tracker-button-custom';
 let originalButton = null;
 let orderTotalValue = null;
@@ -55,18 +64,19 @@ function findElement(selectors) {
 function extractPrice(element) {
     if (!element) return null;
     const text = element.textContent.trim();
-    // Regex to find currency symbols (€, $, £, etc.) followed by numbers
-    const match = text.match(/(?:\$|\£|\€|\¥|CAD|AUD|USD|EUR|GBP|JPY)\s?([\d,]+(?:\.\d{2})?)|([\d,]+(?:\.\d{2})?)\s?(?:\$|\£|\€|\¥|CAD|AUD|USD|EUR|GBP|JPY)/);
-    if (match) {
-        const priceStr = match[1] || match[2]; // Get the number part
+    // Updated Regex: Match currency symbol, then capture digits, commas, period until first non-digit/non-period/non-comma
+    // Handles formats like $10.49, $1,234.56, €99,99 etc., stopping before any trailing text like ($0.37 / Fl Oz)
+    const match = text.match(/(?:\$|\£|\€|\¥|CAD|AUD|USD|EUR|GBP|JPY)\s?([\d,]+(?:\.\d{1,2})?)/);
+    if (match && match[1]) {
+        const priceStr = match[1]; // Get the number part
         const cleanedPrice = priceStr.replace(/,/g, ''); // Remove commas
         const price = parseFloat(cleanedPrice);
         if (!isNaN(price)) {
-            console.log(`Extracted price: ${price} from text "${text}"`);
+            console.log(`Extracted price: ${price} from text "${text}" using match:`, match);
             return price;
         }
     }
-    console.warn(`Could not extract price from text: "${text}"`);
+    console.warn(`Could not extract price from text: "${text}" using regex.`);
     return null;
 }
 
@@ -108,41 +118,109 @@ function injectCustomButton() {
         event.stopPropagation();
         console.log('Custom button clicked.');
 
-        // Re-check order total just in case it updated dynamically
-        // Special handling for order total - get the LAST matching element
-        let currentOrderTotalElement = null;
-        const totalElements = document.querySelectorAll('div.order-summary-line-definition');
-        if (totalElements.length > 0) {
-            currentOrderTotalElement = totalElements[totalElements.length - 1];
-            console.log('Found last order total element:', currentOrderTotalElement);
-        } else {
-            console.log('Could not find any elements matching div.order-summary-line-definition on click.');
-            // Fallback to other selectors if needed?
-            // currentOrderTotalElement = findElement(ORDER_TOTAL_SELECTORS.slice(1)); // Example: try others
-        }
+        // Use a short timeout to allow potential dynamic rendering to complete
+        setTimeout(() => {
+            console.log('Running item extraction after short delay...');
 
-        orderTotalValue = extractPrice(currentOrderTotalElement);
-
-        if (orderTotalValue === null) {
-            console.error('Could not determine order total on click.');
-            alert('Error: Could not determine the order total. Cannot proceed with spending check.');
-            // Maybe re-enable original button here?
-            // triggerOriginalOrderAction(); // Or just proceed without check?
-            return;
-        }
-
-        console.log(`Sending message to background. Order total: ${orderTotalValue}`);
-        chrome.runtime.sendMessage({ action: 'showConfirmation', orderTotal: orderTotalValue }, (response) => {
-            if (chrome.runtime.lastError) {
-                console.error('Error sending message to background:', chrome.runtime.lastError.message);
-                alert('Error communicating with the extension background. Please try reloading the page.');
-            } else if (response && response.success) {
-                console.log('Background acknowledged showConfirmation request.');
+            // Re-check order total just in case it updated dynamically
+            // Special handling for order total - get the LAST matching element
+            let currentOrderTotalElement = null;
+            const totalElements = document.querySelectorAll('div.order-summary-line-definition');
+            if (totalElements.length > 0) {
+                currentOrderTotalElement = totalElements[totalElements.length - 1];
+                console.log('Found last order total element:', currentOrderTotalElement);
             } else {
-                console.error('Background script reported an error:', response?.error);
-                alert(`Error showing confirmation: ${response?.error || 'Unknown error'}`);
+                console.log('Could not find any elements matching div.order-summary-line-definition on click.');
+                // Fallback to other selectors if needed?
+                // currentOrderTotalElement = findElement(ORDER_TOTAL_SELECTORS.slice(1)); // Example: try others
             }
-        });
+
+            orderTotalValue = extractPrice(currentOrderTotalElement);
+
+            if (orderTotalValue === null) {
+                console.error('Could not determine order total on click.');
+                alert('Error: Could not determine the order total. Cannot proceed with spending check.');
+                // Maybe re-enable original button here?
+                // triggerOriginalOrderAction(); // Or just proceed without check?
+                return;
+            }
+
+            // --- Extract Item Details ---
+            const orderItems = []; // Array to store {name, price} objects
+            // Directly select all name elements (outer spans) on the page
+            const nameElements = document.querySelectorAll(ORDER_ITEM_NAME_SELECTOR);
+            console.log(`Found ${nameElements.length} potential item name elements using selector: ${ORDER_ITEM_NAME_SELECTOR}`);
+            console.log('NodeList:', nameElements); // Log the NodeList itself
+
+            nameElements.forEach((outerSpanElement, index) => {
+                console.log(`Processing element ${index + 1}:`, outerSpanElement); // Log the outer element object
+                console.log(`Element ${index + 1} outerHTML:`, outerSpanElement.outerHTML); // Log outerHTML
+
+                // Find the inner span containing the text
+                const innerNameElement = outerSpanElement.querySelector('span.lineitem-title-text');
+                const itemName = innerNameElement ? innerNameElement.textContent.trim() : null;
+                console.log(`Element ${index + 1} inner textContent (trimmed): '${itemName}'`); // Log extracted text
+
+                // Find the price element relative to the title element's container
+                let itemPrice = null;
+                const itemContainer = outerSpanElement.closest('div.a-box.lineitem-container');
+                if (itemContainer) {
+                    const priceElement = itemContainer.querySelector(ORDER_ITEM_PRICE_SELECTOR);
+                    if (priceElement) {
+                        console.log(` Found price element for item ${index + 1}:`, priceElement);
+                        itemPrice = extractPrice(priceElement);
+                    } else {
+                        console.warn(` Could not find price element for item ${index + 1} within container:`, itemContainer);
+                    }
+                } else {
+                     console.warn(` Could not find container (.a-box.lineitem-container) for item ${index + 1}:`, outerSpanElement);
+                }
+                console.log(` Price extracted for item ${index + 1}: ${itemPrice}`);
+
+                // Find the quantity element and extract quantity
+                let itemQuantity = 1; // Default to 1
+                if(itemContainer){
+                    const quantityElement = itemContainer.querySelector(ORDER_ITEM_QUANTITY_SELECTOR);
+                    if(quantityElement){
+                        const quantityText = quantityElement.textContent.trim();
+                        const parsedQuantity = parseInt(quantityText, 10);
+                        if (!isNaN(parsedQuantity)) {
+                            itemQuantity = parsedQuantity;
+                        }
+                        console.log(` Found quantity element for item ${index + 1}: '${quantityText}'. Parsed as: ${itemQuantity}`, quantityElement);
+                    } else {
+                         console.warn(` Could not find quantity element for item ${index + 1} within container:`, itemContainer);
+                    }
+                }
+                // else: Keep default quantity if container wasn't found (already warned)
+
+                // Add item if name is found (price can be null)
+                if (itemName) {
+                    orderItems.push({ name: itemName, price: itemPrice, quantity: itemQuantity }); // Add name, price, and quantity object
+                    console.log(`Added item ${index + 1}: Name='${itemName}', Price=${itemPrice}, Quantity=${itemQuantity}`);
+                } else {
+                    console.warn(`Element ${index + 1} did not yield a valid itemName from its inner span.`);
+                }
+            });
+            console.log(`Finished processing elements. Total items extracted: ${orderItems.length}`);
+            // --- End Extract Item Details ---
+
+            console.log(`Sending message to background. Order total: ${orderTotalValue}, Items:`, orderItems);
+            // Send total and item objects array
+            chrome.runtime.sendMessage({ action: 'showConfirmation', orderTotal: orderTotalValue, items: orderItems }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error('Error sending message to background:', chrome.runtime.lastError.message);
+                    alert('Error communicating with the extension background. Please try reloading the page.');
+                } else if (response && response.success) {
+                    console.log('Background acknowledged showConfirmation request.');
+                } else {
+                    console.error('Background script reported an error:', response?.error);
+                    alert(`Error showing confirmation: ${response?.error || 'Unknown error'}`);
+                }
+            });
+
+        }, 100); // 100ms delay
+
     });
 
     // 3. Insert the custom button (try placing it right before the original)
