@@ -5,7 +5,7 @@ const budgetSection = document.getElementById('budgetSection');
 const errorDiv = document.getElementById('error');
 
 const orderTotalSpan = document.getElementById('orderTotal');
-const currentOrderItemsList = document.getElementById('currentOrderItemsList');
+const currentOrderItemsTableBody = document.getElementById('currentOrderItemsTable')?.querySelector('tbody'); // Get table body
 const currentSpendingSpan = document.getElementById('currentSpending');
 const monthlyLimitSpan = document.getElementById('monthlyLimit');
 const remainingBudgetSpan = document.getElementById('remainingBudget');
@@ -79,30 +79,33 @@ function populatePopup(data) {
     monthlyLimitSpan.textContent = `$${limit.toFixed(2)}`;
     remainingBudgetSpan.textContent = `$${remaining.toFixed(2)}`;
 
-    // Populate the current items list
-    currentOrderItemsList.innerHTML = ''; // Clear previous items
+    // Populate the current items table
+    if (!currentOrderItemsTableBody) {
+        console.error('Could not find table body #currentOrderItemsTable tbody');
+        return;
+    }
+    currentOrderItemsTableBody.innerHTML = ''; // Clear previous items
+
     if (currentItems.length === 0) {
-        currentOrderItemsList.innerHTML = '<li>No specific items detected.</li>';
+        const row = currentOrderItemsTableBody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 3; // Span across all columns
+        cell.textContent = 'No specific items detected.';
+        cell.style.textAlign = 'center';
     } else {
         currentItems.forEach(item => {
-            console.log("Bernett: ", item);
-            const li = document.createElement('li');
-            // Display name and price (if available)
-            // Make price formatting more robust
-            let priceString = '(Price not found)';
-            if (item && typeof item.price === 'number') { // Check if item exists and price is a number
-                priceString = `$${item.price.toFixed(2)}`;
-            } else if (item && item.price === null) {
-                // Price was explicitly null (extraction failed), keep default message or customize
-                // priceString = '(Price could not be extracted)';
-            } else {
-                // Log if item or item.price is unexpected (like undefined)
-                console.warn('Unexpected item structure in current order items:', item);
-                priceString = '(Invalid item data)';
-            }
-            const quantityString = item.quantity > 1 ? `(Qty: ${item.quantity})` : ''; // Show quantity if > 1
-            li.textContent = `${item.name || '(Name not found)'} ${quantityString} - ${priceString}`;
-            currentOrderItemsList.appendChild(li);
+            const row = currentOrderItemsTableBody.insertRow();
+            
+            const qtyCell = row.insertCell();
+            qtyCell.textContent = item.quantity !== undefined ? item.quantity : '1'; // Default to 1 if quantity missing
+            qtyCell.style.textAlign = 'center';
+
+            const nameCell = row.insertCell();
+            nameCell.textContent = item.name || 'Unknown Item';
+
+            const priceCell = row.insertCell();
+            priceCell.textContent = item.price !== undefined ? `$${item.price.toFixed(2)}` : 'N/A';
+            priceCell.style.textAlign = 'right';
         });
     }
 
@@ -153,6 +156,11 @@ hidePurchasesButton.addEventListener('click', () => {
     budgetSection.style.display = 'block';
 });
 
+// --- Initial Button State --- 
+confirmButton.style.display = 'none'; // Hide confirm initially
+reviewButton.textContent = 'Review Order'; // Set review button text
+confirmButton.textContent = 'Confirm Order'; // Set confirm button text for later
+
 confirmButton.addEventListener('click', () => {
     console.log('Confirm button clicked.');
     if (!currentOrderData || currentOrderData.tabId === undefined) {
@@ -163,26 +171,60 @@ confirmButton.addEventListener('click', () => {
     confirmButton.disabled = true;
     confirmButton.textContent = 'Processing...';
 
-    console.log(`Sending confirmOrder message for tabId: ${currentOrderData.tabId}`);
-    chrome.runtime.sendMessage({
-        action: 'confirmOrder',
-        tabId: currentOrderData.tabId
-    }, (response) => {
-        // We don't expect a direct response here that confirms success,
-        // as the action happens in the content script.
-        // The background script will handle the storage update *after*
-        // the content script confirms the trigger.
-         if (chrome.runtime.lastError) {
-             console.error("Error sending confirmOrder message:", chrome.runtime.lastError.message);
-             // Re-enable button on error maybe?
-             displayError(`Failed to send confirmation: ${chrome.runtime.lastError.message}`);
-             confirmButton.disabled = false;
-             confirmButton.textContent = 'Confirm and Place Order';
-         } else {
-             console.log('Confirmation message sent to background.');
-             // Close the popup after sending the message
-             window.close();
-         }
+    // --- Step 1: Record purchase with backend --- 
+    const recordApiUrl = 'http://localhost:8000/spending/record-purchase'; 
+    const purchaseData = {
+        orderAmount: currentOrderData.orderTotal,
+        itemsInOrder: currentOrderData.currentOrderItems || [],
+        // Add any other relevant data you want to record
+        timestamp: new Date().toISOString()
+    };
+
+    console.log('Sending record request to:', recordApiUrl, 'with body:', purchaseData);
+
+    fetch(recordApiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(purchaseData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            // Try to get error message from response body
+            return response.json().catch(() => null).then(errBody => {
+                throw new Error(`Failed to record purchase. Status: ${response.status}. ${errBody?.detail || ''}`);
+            });
+        }
+        return response.json(); // Expecting a success message or status
+    })
+    .then(recordResponse => {
+        console.log('Purchase recorded successfully:', recordResponse);
+        
+        // --- Step 2: Proceed with original confirmation logic --- 
+        console.log(`Sending confirmOrder message for tabId: ${currentOrderData.tabId}`);
+        chrome.runtime.sendMessage({ 
+            action: 'confirmOrder',
+            tabId: currentOrderData.tabId 
+        }, (response) => {
+             if (chrome.runtime.lastError) {
+                 console.error("Error sending confirmOrder message:", chrome.runtime.lastError.message);
+                 displayError(`Failed to send confirmation after recording: ${chrome.runtime.lastError.message}`);
+                 // Re-enable button on error AFTER successful recording but failed background message
+                 confirmButton.disabled = false; 
+                 confirmButton.textContent = 'Confirm Order';
+             } else {
+                 console.log('Confirmation message sent to background.');
+                 window.close(); // Close popup on success
+             }
+        });
+    })
+    .catch(error => {
+        console.error('Error recording purchase:', error);
+        displayError(`Failed to record purchase: ${error.message}`);
+        // Re-enable button if recording failed
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Confirm Order';
     });
 });
 
@@ -212,8 +254,6 @@ reviewButton.addEventListener('click', () => {
     const apiUrl = 'http://localhost:8000/spending/check-order';
     const requestBody = {
         orderAmount: currentOrderData.orderTotal,
-        currentSpending: currentOrderData.currentSpending,
-        monthlyLimit: currentOrderData.limit,
         itemsInOrder: currentOrderData.currentOrderItems || []
     };
 
@@ -252,7 +292,12 @@ reviewButton.addEventListener('click', () => {
         reviewResultDiv.style.display = 'block';
     })
     .finally(() => {
-        reviewButton.disabled = false;
-        reviewButton.textContent = 'Review with AI';
+        // Instead of re-enabling review button:
+        // Hide review button and show confirm button
+        reviewButton.style.display = 'none';
+        confirmButton.style.display = 'inline-block'; // Or 'block' depending on layout
+        // Confirm button state is handled by its own click listener now
+        confirmButton.disabled = false; 
+        confirmButton.textContent = 'Confirm Order';
     });
 });

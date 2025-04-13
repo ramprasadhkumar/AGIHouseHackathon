@@ -13,6 +13,34 @@
             margin-bottom: 10px;
             font-size: 0.9em;
         }
+
+        /* Table Styles */
+        #currentOrderItemsTable {
+            width: 100%; /* Make table take full width */
+            border-collapse: collapse; /* Collapse borders into a single line */
+            margin-bottom: 15px; /* Add some space below the table */
+            font-size: 0.9em;
+        }
+        #currentOrderItemsTable th, 
+        #currentOrderItemsTable td {
+            border: 1px solid #ddd; /* Light grey border */
+            padding: 6px 8px; /* Add padding inside cells */
+            text-align: left; /* Align text to the left by default */
+        }
+        #currentOrderItemsTable th {
+            background-color: #f2f2f2; /* Light grey background for header */
+            font-weight: bold;
+        }
+        /* Align quantity and price columns */
+        #currentOrderItemsTable td:first-child, /* First column (Qty) */
+        #currentOrderItemsTable th:first-child {
+             text-align: center; 
+        }
+        #currentOrderItemsTable td:last-child, /* Last column (Price) */
+        #currentOrderItemsTable th:last-child {
+             text-align: right;
+        }
+
         /* Add styling for review result */
         .review-result {
             padding: 8px;
@@ -38,7 +66,18 @@
     <div id="budgetSection" style="display: none;">
         <p>Current Order Total: <strong id="orderTotal">$?.??</strong></p>
         <p>Items in this order:</p>
-        <ul id="currentOrderItemsList" class="item-list"></ul>
+        <table id="currentOrderItemsTable">
+            <thead>
+                <tr>
+                    <th>Qty</th>
+                    <th>Item Name</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Items will be populated here by popup.js -->
+            </tbody>
+        </table>
         <hr>
         <p>Spent This Month (Before this order): <strong id="currentSpending">$?.??</strong></p>
         <p>Monthly Limit: <strong id="monthlyLimit">$?.??</strong></p>
