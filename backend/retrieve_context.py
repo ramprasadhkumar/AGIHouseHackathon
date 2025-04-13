@@ -5,23 +5,15 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 import yaml
-
+import json
 class LLMPrompt:
     def __init__(self, model_name="deepseek-ai/DeepSeek-R1-Distill-Llama-8B"):
         self.model_name = model_name
         self.generator = pipeline("text-generation", model=model_name)
-        # 🧪 Example usage
-        self.folder = "spend-folder-txt"
-        # question = "What is the total amount spent?"
-
-        with open("../rag-solution/config.yaml", "r") as f:
-            config = yaml.safe_load(f)
-
-        self.test_mode = config["test_mode"]
-        self.chunks = self.load_text_files(self.folder)
-        self.embeddings, self.chunk_texts = self.embed_chunks(self.chunks)
-        self.faiss_index = self.build_faiss_index(self.embeddings)
-        self.embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        
+        self.previous_spending_data = json.load(open("spend-folder-json/sample_1.json"))
+        self.previous_spending_data_dump = json.dumps(self.previous_spending_data)
+        self.unique_categories = ["Grocery", "Clothing", "Electronics", "Entertainment", "Personal Care", "Beverage"]
         
     # 1. Load and chunk text data
     def load_text_files(self, folder_path):
@@ -58,55 +50,54 @@ class LLMPrompt:
         return [chunks[i] for i in indices[0]]
 
     # 5. Generate answer from context
-    def generate_answer(self, question, context):
+    def generate_answer(self, question, context, type="generate_category"):
         prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
         output = self.generator(prompt, max_length=10000, do_sample=True, temperature=0.7)
         generated_text = output[0]["generated_text"]
-        amount = None
-        # Parse the amount from the answer
-        try:
-            # Look for "Answer:" followed by a dollar amount
-            if "Answer:" in generated_text:
-                answer_text = generated_text.split("Answer:")[-1]
-                # Find dollar amount, looking for \boxed{number} format
-                import re
-                amount_match = re.search(r'\\boxed{([\d.]+)}', answer_text)
-                if amount_match:
-                    return float(amount_match.group(1)), answer_text
-                # Fallback to looking for $ followed by number
-                amount_match = re.search(r'\$\s*([\d,.]+)', answer_text)
-                if amount_match:
-                    amount = amount_match.group(1).replace(',', '')
-                    return float(amount), answer_text
-            return amount, generated_text
-        except:
-            return amount, generated_text
-
-    def prompt_llm(self, question: str, retrieval_length: int = 100):
-        # Step-by-step
-        retrieved = self.retrieve_relevant_chunks(question, self.faiss_index, self.chunk_texts, self.embedder, k=retrieval_length)
-        print(1)
-        # Combine retrieved chunks into a single context
-        context_text = "\n".join(retrieved)
-        print(2)
-        # answer = generate_answer(question, context_text, model_name="deepseek-ai/deepseek-coder-6.7b-base")
-        answer, generated_text = self.generate_answer(question, context_text)
-        print(3,answer)
-        if isinstance(answer, float):
-            answer = {
-                "message": f"The total amount spent is ${answer:.2f}",
-                "status": "Yes",
-                "amount": answer,
-                "generated_text": generated_text
-            }
+        # Extract dictionary from answer text
+        if type == "generate_category":
+            answer_text = generated_text.split("Answer:")[-1].strip()
+            try:
+                # Find the first occurrence of a list/dict in square brackets
+                start_idx = answer_text.find('[')
+                end_idx = answer_text.find(']') + 1
+                if start_idx != -1 and end_idx != -1:
+                    dict_str = answer_text[start_idx:end_idx]
+                else:
+                    dict_str = answer_text
+            except:
+                dict_str = answer_text
+            return dict_str
         else:
-            answer = {
-                "message": generated_text,
-                "status": "No/Not sure"
-            }
-        print(4)
+            # Extract everything after "Answer:" including the thinking process and dictionary
+            answer_text = generated_text.split("Answer:")[-1].strip()
+            # Save the answer text to girlfriend_response.txt
+            with open("girlfriend_response.txt", "w") as f:
+                f.write(answer_text)
+            return answer_text
+        # Parse the amount from the answer
+
+    def prompt_llm(self, incoming_order: dict, retrieval_length: int = 100):
+        # Step-by-step
+        incoming_order_dump = json.dumps(incoming_order)
+        previous_order_dump = self.previous_spending_data_dump
+        unique_categories = json.dumps(self.unique_categories)
+        category_context = f"<incoming_order>: {incoming_order_dump}, <Unique_categories>: {unique_categories}"
+        incoming_order_with_category_str = self.generate_answer(context=category_context, question="I have given the incoming order dictionary's dump as context under <incoming_order> and the unique categories as context under the key: <unique_categories>, get the category for each item in the order dictionary and map it to the category in the <unique_categories> and in the answer give the updated order dict with the category key. Give the only the updated incoming dictionary as answer")
+        
+        question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Give your answer in the form of a dictionary with the following keys: <analysis>, <status>"
+        new_context = f"<previous_spending_data>: {previous_order_dump}\nincoming order: {incoming_order_with_category_str}\n{question}"
+        answer = self.generate_answer(context=new_context, question=question)
         return answer
 
 if __name__ == "__main__":
     llm = LLMPrompt()
-    print(llm.prompt_llm("What is the total amount spent?"))
+    print(
+        llm.prompt_llm(
+            [
+                { "name": "Wired Mouse", "price": 25.99 },
+                { "name": "Wired Keyboard", "price": 79.50 },
+                { "name": "Wired Headphone", "price": 19.99 }
+            ]
+        )
+    )
