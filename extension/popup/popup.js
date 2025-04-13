@@ -19,6 +19,7 @@ const confirmButton = document.getElementById('confirmButton');
 const cancelButton = document.getElementById('cancelButton');
 const reviewButton = document.getElementById('reviewButton');
 const reviewResultDiv = document.getElementById('reviewResult');
+const mascotContainer = document.getElementById('mascotContainer'); // Added mascot container
 
 let currentOrderData = null; // To store { orderTotal, limit, currentSpending, items, tabId }
 let monthlyItems = []; // To store the fetched items
@@ -48,16 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
             populatePopup(response.data);
             loadingDiv.style.display = 'none';
             budgetSection.style.display = 'block'; // Show budget section
-
-            // Play the alert sound
-            try {
-                const audioUrl = chrome.runtime.getURL('data/alert.wav');
-                const alertSound = new Audio(audioUrl);
-                alertSound.play().catch(e => console.error("Error playing sound:", e)); // Play and catch potential errors
-                console.log("Attempting to play alert sound.");
-            } catch (e) {
-                console.error("Error creating or playing audio:", e);
-            }
 
         } else {
             displayError(response?.error || 'Failed to get order data from background script.');
@@ -277,13 +268,7 @@ reviewButton.addEventListener('click', () => {
     })
     .then(data => {
         console.log('Received review response:', data);
-        reviewResultDiv.textContent = data.message || 'No message received.';
-        if (data.status === 'no') {
-            reviewResultDiv.classList.add('warning');
-        } else if (data.status === 'yes') {
-            reviewResultDiv.classList.add('success');
-        }
-        reviewResultDiv.style.display = 'block';
+        showReviewResult(data); // Show review result and mascot
     })
     .catch(error => {
         console.error('Error calling review API:', error);
@@ -301,3 +286,10 @@ reviewButton.addEventListener('click', () => {
         confirmButton.textContent = 'Confirm Order';
     });
 });
+
+function showReviewResult(result) {
+    const reviewResult = document.getElementById('reviewResult');
+    reviewResult.style.display = 'block';
+    reviewResult.textContent = result.message;
+    reviewResult.className = 'review-result ' + (result.status === 'yes' ? 'success' : 'warning');
+}

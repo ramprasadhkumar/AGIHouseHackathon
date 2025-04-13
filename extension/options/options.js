@@ -10,16 +10,16 @@ const statusP = document.getElementById('status');
 const BASE_URL = 'http://localhost:8000'; // Your FastAPI server URL
 
 // Function to update status message
-function updateStatus(message, isError = false) {
-    statusP.textContent = message;
-    statusP.style.color = isError ? 'red' : 'green';
-    // Optional: clear status after a few seconds
-    // setTimeout(() => statusP.textContent = '', 5000);
+function updateStatus(message) {
+    const status = document.getElementById('status');
+    status.textContent = message;
+    setTimeout(() => {
+        status.textContent = '';
+    }, 2000);
 }
 
 // Load current settings from the backend
 async function loadSettings() {
-    updateStatus('Loading settings...', false);
     try {
         const response = await fetch(`${BASE_URL}/spending/monthly`);
         if (!response.ok) {
@@ -31,15 +31,13 @@ async function loadSettings() {
         limitInput.value = data.limit !== undefined ? data.limit : 500; // Keep default logic
         currentLimitSpan.textContent = data.limit !== undefined ? data.limit.toFixed(2) : 'N/A';
         currentSpendingSpan.textContent = data.currentSpending !== undefined ? data.currentSpending.toFixed(2) : 'N/A';
-        updateStatus('Settings loaded.', false);
 
     } catch (error) {
         console.error('Error loading settings:', error);
-        updateStatus(`Could not connect to backend: ${error.message}. Displaying defaults.`, true);
-        // Set defaults or N/A on error
-        limitInput.value = 500; // Default limit input value
-        currentLimitSpan.textContent = (500).toFixed(2); // Display default limit
-        currentSpendingSpan.textContent = (0).toFixed(2); // Display default spending
+        // Silently fall back to defaults without showing error
+        limitInput.value = 500;
+        currentLimitSpan.textContent = (500).toFixed(2);
+        currentSpendingSpan.textContent = (0).toFixed(2);
     }
 }
 
@@ -47,11 +45,10 @@ async function loadSettings() {
 saveLimitButton.addEventListener('click', async () => {
     const newLimit = parseFloat(limitInput.value);
     if (isNaN(newLimit) || newLimit < 0) {
-        updateStatus('Please enter a valid non-negative number for the limit.', true);
+        updateStatus('Please enter a valid non-negative number for the limit.');
         return;
     }
 
-    updateStatus('Saving limit...', false);
     try {
         const response = await fetch(`${BASE_URL}/spending/limit`, {
             method: 'PUT',
@@ -67,13 +64,13 @@ saveLimitButton.addEventListener('click', async () => {
             throw new Error(data.detail || data.message || `HTTP error ${response.status}`);
         }
 
-        updateStatus(data.message || 'Limit updated successfully!', false);
+        updateStatus(data.message || 'Limit updated successfully!');
         // Refresh the displayed settings after saving
         loadSettings();
 
     } catch (error) {
         console.error('Error saving limit:', error);
-        updateStatus(`Error saving limit: ${error.message}`, true);
+        updateStatus(`Error saving limit: ${error.message}`);
     }
 });
 
@@ -83,7 +80,6 @@ resetSpendingButton.addEventListener('click', async () => {
         return;
     }
 
-    updateStatus('Resetting spending...', false);
     try {
         const response = await fetch(`${BASE_URL}/spending/reset`, {
             method: 'POST',
@@ -98,13 +94,13 @@ resetSpendingButton.addEventListener('click', async () => {
             throw new Error(data.detail || data.message || `HTTP error ${response.status}`);
         }
 
-        updateStatus(data.message || 'Spending reset successfully!', false);
+        updateStatus(data.message || 'Spending reset successfully!');
         // Refresh settings to show the new zero spending
         loadSettings(); 
 
     } catch (error) {
         console.error('Error resetting spending:', error);
-        updateStatus(`Error resetting spending: ${error.message}`, true);
+        updateStatus(`Error resetting spending: ${error.message}`);
     }
 });
 
