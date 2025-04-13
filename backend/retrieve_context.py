@@ -83,14 +83,22 @@ class LLMPrompt:
         previous_order_dump = self.previous_spending_data_dump
         unique_categories = json.dumps(self.unique_categories)
         category_context = f"<incoming_order>: {incoming_order_dump}, <unique_categories>: {unique_categories}"
-        incoming_order_with_category_str = self.generate_answer(context=category_context, question="I have given the incoming order dictionary's dump as context under <incoming_order> and the unique categories as context under the key: <unique_categories>, get the category for each item in the order dictionary and map it to the category in the <unique_categories> and in the answer give the updated order dict with the category key. Give the only the updated incoming dictionary as answer")
+        incoming_order_with_category_str = self.generate_answer(
+            context=category_context, 
+            question="I have given the incoming order dictionary's dump as context under <incoming_order> and the unique categories as context under the key: <unique_categories>, get the category for each item in the order dictionary and map it to the category in the <unique_categories> and in the answer give the updated order dict with the category key. Make sure to give only the updated incoming dictionary as answer",
+            type="generate_category"
+        )
         
         question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Give your answer in the form of a dictionary with the following keys: <analysis>, <status>"
         if additional_context:
             new_context = f"<previous_spending_data>: {previous_order_dump}\n<incoming_order>: {incoming_order_with_category_str}\n<additional_context>: {additional_context}"
         else:
             new_context = f"<previous_spending_data>: {previous_order_dump}\nincoming order: {incoming_order_with_category_str}"
-        answer = self.generate_answer(context=new_context, question=question)
+        answer = self.generate_answer(
+            context=new_context, 
+            question=question,
+            type="generate_analysis"
+        )
         answer_dict = {
             "status": "success",
             "message": answer
@@ -101,10 +109,11 @@ if __name__ == "__main__":
     llm = LLMPrompt()
     print(
         llm.prompt_llm(
-            [
+            incoming_order=[
                 { "name": "Wired Mouse", "price": 25.99 },
                 { "name": "Wired Keyboard", "price": 79.50 },
                 { "name": "Wired Headphone", "price": 19.99 }
-            ]
+            ],
+            additional_context="Montly spend limit is: 5000, you have already purchased items under the key: <previous_spending_data>"
         )
     )
