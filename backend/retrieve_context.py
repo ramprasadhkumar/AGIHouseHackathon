@@ -77,7 +77,7 @@ class LLMPrompt:
             return answer_text
         # Parse the amount from the answer
 
-    def prompt_llm(self, incoming_order: dict, retrieval_length: int = 100):
+    def prompt_llm(self, incoming_order: dict, retrieval_length: int = 100, additional_context: str = ""):
         # Step-by-step
         incoming_order_dump = json.dumps(incoming_order)
         previous_order_dump = self.previous_spending_data_dump
@@ -88,7 +88,11 @@ class LLMPrompt:
         question = "you are a girlfriend who is helping your boyfriend to manage his money, for the items in the incoming order dictionary dump, give your analysis on if he should buy those items or not. The context consist of previous spending data under the key: <previous_spending_data> and the incoming order under the key: <incoming_order>. Give your answer in the form of a dictionary with the following keys: <analysis>, <status>"
         new_context = f"<previous_spending_data>: {previous_order_dump}\nincoming order: {incoming_order_with_category_str}\n{question}"
         answer = self.generate_answer(context=new_context, question=question)
-        return answer
+        answer_dict = {
+            "status": "success",
+            "message": answer
+        }
+        return answer_dict
 
 if __name__ == "__main__":
     llm = LLMPrompt()
